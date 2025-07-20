@@ -1023,13 +1023,13 @@ class GameScene: SKScene, AdManagerDelegate {
         if powerUpMultiplier > 1.0 {
             successMessage += " ⚡"
         }
-        if coinMultiplier > 1.0 {
+        if powerUpCoinMultiplier > 1.0 || comboCoinMultiplier > 1.0 {
             successMessage += " 💰"
         }
         showMessage(successMessage, color: .green)
         
         // Show score popup with multiplier if active
-        if powerUpMultiplier > 1.0 || coinMultiplier > 1.0 {
+        if powerUpMultiplier > 1.0 || powerUpCoinMultiplier > 1.0 || comboCoinMultiplier > 1.0 {
             showFloatingText("+\(finalScore) pts!", at: CGPoint(x: critterNode.position.x, y: critterNode.position.y + 60), color: .systemYellow)
         }
         
@@ -1043,7 +1043,8 @@ class GameScene: SKScene, AdManagerDelegate {
             self.currentLevel += 1
             
             // Check for mini-game
-            if let miniGameManager = MiniGameManager(), miniGameManager.shouldShowMiniGame(level: self.currentLevel) {
+            let miniGameManager = MiniGameManager()
+            if miniGameManager.shouldShowMiniGame(level: self.currentLevel) {
                 self.showMiniGame()
             } else {
                 self.startNewLevel()
