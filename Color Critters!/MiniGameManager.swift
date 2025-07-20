@@ -430,20 +430,3 @@ class MiniGameManager: SKNode {
     }
 }
 
-// MARK: - Mini Game Types
-
-enum MiniGameType {
-    case colorMemory
-    case speedTap
-    case colorMatch
-    case sequenceFollow
-    
-    var title: String {
-        switch self {
-        case .colorMemory: return "Memory Test"
-        case .speedTap: return "Speed Tap"
-        case .colorMatch: return "Color Match"
-        case .sequenceFollow: return "Follow Me"
-        }
-    }
-}

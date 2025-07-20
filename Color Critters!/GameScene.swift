@@ -9,7 +9,7 @@ import SpriteKit
 import GameplayKit
 import AVFoundation
 
-class GameScene: SKScene, AdManagerDelegate {
+class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDelegate {
     
     // MARK: - Game Properties
     private var currentLevel = 1
@@ -1645,39 +1645,5 @@ extension GameScene: PowerUpUIDelegate {
             critterNode.addChild(sparkle)
             sparkle.run(sequence)
         }
-    }
-}
-
-// MARK: - AnimalGalleryDelegate
-extension GameScene: AnimalGalleryDelegate {
-    func galleryDidClose() {
-        animalGallery?.removeFromParent()
-        animalGallery = nil
-    }
-}
-
-// MARK: - MiniGameDelegate
-extension GameScene: MiniGameDelegate {
-    func miniGameCompleted(score: Int, coins: Int) {
-        // Award bonus rewards
-        GameSettings.shared.coins += coins
-        GameSettings.shared.updateScore(score)
-        updateGamificationUI()
-        
-        showFloatingText("Mini-Game Complete! +\(coins) coins!", 
-                        at: CGPoint(x: size.width/2, y: size.height/2), 
-                        color: .systemGreen)
-        
-        HapticManager.shared.levelComplete()
-        
-        // Continue to next level
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            self.startNewLevel()
-        }
-    }
-    
-    func miniGameSkipped() {
-        // Just continue to next level
-        startNewLevel()
     }
 }
