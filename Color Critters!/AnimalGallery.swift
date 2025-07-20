@@ -226,15 +226,3 @@ class AnimalGallery: SKNode {
     }
 }
 
-extension SKSpriteNode {
-    static func roundedRect(color: UIColor, size: CGSize, cornerRadius: CGFloat) -> SKSpriteNode {
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let image = renderer.image { context in
-            color.setFill()
-            let rect = CGRect(origin: .zero, size: size)
-            let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
-            path.fill()
-        }
-        return SKSpriteNode(texture: SKTexture(image: image))
-    }
-}
