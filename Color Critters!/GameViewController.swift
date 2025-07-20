@@ -18,20 +18,20 @@ class GameViewController: UIViewController {
         if let view = self.view as! SKView? {
             // Create the scene with proper size
             let scene = GameScene(size: view.bounds.size)
-            
-            // Set the scale mode to scale to fit the window
+                
+                // Set the scale mode to scale to fit the window
             scene.scaleMode = .aspectFill
-            
-            // Present the scene
+                
+                // Present the scene
             view.presentScene(scene)
-            
+                    
             // Configure view settings
-            view.ignoresSiblingOrder = true
-            
+                    view.ignoresSiblingOrder = true
+                    
             // Enable debugging in development
             #if DEBUG
-            view.showsFPS = true
-            view.showsNodeCount = true
+                    view.showsFPS = true
+                    view.showsNodeCount = true
             view.showsPhysics = false
             #endif
         }
@@ -43,8 +43,8 @@ class GameViewController: UIViewController {
         // Ensure proper orientation
         if let window = view.window {
             window.rootViewController?.setNeedsStatusBarAppearanceUpdate()
-        }
-    }
+                }
+            }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
