@@ -8,6 +8,22 @@
 import SpriteKit
 import GameplayKit
 
+enum MiniGameType {
+    case colorMemory
+    case speedTap
+    case colorMatch
+    case sequenceFollow
+    
+    var title: String {
+        switch self {
+        case .colorMemory: return "Color Memory"
+        case .speedTap: return "Speed Tap"
+        case .colorMatch: return "Color Match"
+        case .sequenceFollow: return "Follow Sequence"
+        }
+    }
+}
+
 protocol MiniGameDelegate: AnyObject {
     func miniGameCompleted(score: Int, coins: Int)
     func miniGameSkipped()

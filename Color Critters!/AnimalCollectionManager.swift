@@ -172,6 +172,34 @@ class AnimalCollectionManager {
     }
 }
 
+// MARK: - Collection Rewards
+
+func checkForCollectionRewards() -> [CollectionReward] {
+    let collection = getCollection()
+    var rewards: [CollectionReward] = []
+    
+    // Check for milestone rewards
+    let totalAnimals = collection.count
+    let milestones = [5, 10, 20, 30, 50, 75, 100]
+    
+    for milestone in milestones {
+        if totalAnimals == milestone {
+            rewards.append(.milestone("\(milestone) Animals Collected!", milestone * 10))
+        }
+    }
+    
+    // Check for color completion rewards
+    let colorGroups = Dictionary(grouping: collection) { $0.colorName }
+    for (colorName, animals) in colorGroups {
+        let animalNames = Set(animals.map { $0.name })
+        if animalNames.count >= 5 { // If we have 5+ animals in this color
+            rewards.append(.colorComplete(colorName, 50))
+        }
+    }
+    
+    return rewards
+}
+
 // MARK: - Data Models
 
 private struct CollectedAnimalData: Codable {

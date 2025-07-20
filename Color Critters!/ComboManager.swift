@@ -8,6 +8,22 @@
 import Foundation
 import SpriteKit
 
+enum ComboEffectIntensity {
+    case low
+    case medium
+    case high
+    case extreme
+    
+    var screenShakeIntensity: CGFloat {
+        switch self {
+        case .low: return 2.0
+        case .medium: return 5.0
+        case .high: return 10.0
+        case .extreme: return 15.0
+        }
+    }
+}
+
 class ComboManager {
     static let shared = ComboManager()
     
