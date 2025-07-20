@@ -41,6 +41,12 @@ class GameScene: SKScene, AdManagerDelegate {
     private var powerUpUI: PowerUpUI!
     private var enhancedStatsScreen: EnhancedStatsScreen?
     
+    // MARK: - New Interactive Features
+    private var comboLabel: SKLabelNode!
+    private var animalGallery: AnimalGallery?
+    private var miniGameManager: MiniGameManager?
+    private var currentAnimalName: String = "frog"
+    
     // MARK: - Game State
     private var isDragging = false
     private var draggedNode: SKSpriteNode?
@@ -197,6 +203,20 @@ class GameScene: SKScene, AdManagerDelegate {
         // Gamification UI - Top HUD
         setupGamificationUI()
         
+        // Collection button (gallery)
+        let collectionButton = SKSpriteNode.roundedRect(color: .systemPurple, size: CGSize(width: 50, height: 50), cornerRadius: 25)
+        collectionButton.position = CGPoint(x: 50, y: self.size.height - 40)
+        collectionButton.zPosition = 15
+        collectionButton.name = "collectionButton"
+        
+        let collectionLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        collectionLabel.text = "📚"
+        collectionLabel.fontSize = 20
+        collectionLabel.fontColor = .white
+        collectionLabel.verticalAlignmentMode = .center
+        collectionButton.addChild(collectionLabel)
+        addChild(collectionButton)
+        
         // Pause button
         pauseButton = SKSpriteNode.roundedRect(color: .systemBlue, size: CGSize(width: 50, height: 50), cornerRadius: 25)
         pauseButton.position = CGPoint(x: self.size.width - 40, y: self.size.height - 40)
@@ -277,6 +297,16 @@ class GameScene: SKScene, AdManagerDelegate {
         xpLabel.position = CGPoint(x: self.size.width - 80, y: self.size.height - 120)
         xpLabel.zPosition = 10
         addChild(xpLabel)
+        
+        // Combo display
+        comboLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        comboLabel.text = "⚡ 0x"
+        comboLabel.fontSize = 20
+        comboLabel.fontColor = .systemOrange
+        comboLabel.position = CGPoint(x: 240, y: self.size.height - 100)
+        comboLabel.zPosition = 10
+        comboLabel.alpha = 0 // Hidden initially
+        addChild(comboLabel)
     }
     
     private func setupPowerUpUI() {
@@ -324,8 +354,13 @@ class GameScene: SKScene, AdManagerDelegate {
         statsButton.name = "statsButton"
         menuContainer.addChild(statsButton)
         
+        // Share button
+        let shareButton = createMenuButton(text: "Share Progress", color: .systemGreen, position: CGPoint(x: 0, y: -120))
+        shareButton.name = "shareButton"
+        menuContainer.addChild(shareButton)
+        
         // Restart button
-        let restartButton = createMenuButton(text: "Restart", color: .systemOrange, position: CGPoint(x: 0, y: -120))
+        let restartButton = createMenuButton(text: "Restart", color: .systemOrange, position: CGPoint(x: 0, y: -180))
         restartButton.name = "restartButton"
         menuContainer.addChild(restartButton)
         
@@ -382,6 +417,7 @@ class GameScene: SKScene, AdManagerDelegate {
         
         // Select random critter and color
         let randomCritter = critters.randomElement() ?? "frog"
+        currentAnimalName = randomCritter // Store for collection
         targetColor = colors.randomElement() ?? .red
         
         print("Starting level \(currentLevel) with \(numberOfColors) colors, critter: \(randomCritter), target color: \(colorName(for: targetColor))")
@@ -669,9 +705,30 @@ class GameScene: SKScene, AdManagerDelegate {
             }
         }
         
+        // Handle animal gallery
+        if animalGallery != nil && animalGallery!.isActive {
+            animalGallery?.handleTouch(at: location)
+            return
+        }
+        
+        // Handle mini-games
+        if miniGameManager != nil {
+            miniGameManager?.handleTouch(at: location)
+            return
+        }
+        
+        // Handle collection button
+        if touchedNode.name == "collectionButton" {
+            SoundManager.shared.playTapSound()
+            HapticManager.shared.buttonTap()
+            showAnimalGallery()
+            return
+        }
+        
         // Handle pause button
         if touchedNode.name == "pauseButton" {
             SoundManager.shared.playTapSound()
+            HapticManager.shared.buttonTap()
             togglePause()
             return
         }
@@ -679,7 +736,7 @@ class GameScene: SKScene, AdManagerDelegate {
         // Handle pause menu buttons
         if !pauseMenu.isHidden {
             if touchedNode.name == "resumeButton" || touchedNode.name == "settingsButton" || 
-               touchedNode.name == "statsButton" || touchedNode.name == "restartButton" {
+               touchedNode.name == "statsButton" || touchedNode.name == "shareButton" || touchedNode.name == "restartButton" {
                 handlePauseMenuTouch(at: location)
                 return
             }
@@ -737,6 +794,8 @@ class GameScene: SKScene, AdManagerDelegate {
             showSettings()
         case "statsButton":
             showStats()
+        case "shareButton":
+            shareProgress()
         case "restartButton":
             restartGame()
         default:
@@ -795,6 +854,9 @@ class GameScene: SKScene, AdManagerDelegate {
         // Visual feedback
         blob.setScale(1.3)
         blob.zPosition = 10
+        
+        // Haptic feedback
+        HapticManager.shared.dragStart()
         
         // Stop the bounce animation while dragging
         blob.removeAllActions()
@@ -873,10 +935,24 @@ class GameScene: SKScene, AdManagerDelegate {
         let settings = GameSettings.shared
         let powerManager = PowerUpManager.shared
         let challengeManager = DailyChallengeManager.shared
+        let comboManager = ComboManager.shared
         let oldStreak = settings.currentStreak
         
-        // Play correct sound
+        // Add to combo chain
+        comboManager.addCorrectAnswer()
+        
+        // Play correct sound and haptic feedback
         SoundManager.shared.playCorrectSound()
+        HapticManager.shared.correctMatch()
+        
+        // Add animal to collection
+        AnimalCollectionManager.shared.addAnimal(name: currentAnimalName, color: targetColor, level: currentLevel)
+        
+        // Check for collection rewards
+        let collectionRewards = AnimalCollectionManager.shared.checkForCollectionRewards()
+        for reward in collectionRewards {
+            showCollectionReward(reward)
+        }
         
         // Enhanced visual feedback with particle explosion
         critterNode.run(SKAction.sequence([
@@ -890,19 +966,21 @@ class GameScene: SKScene, AdManagerDelegate {
         // Transform the critter from gray to colored with special effect
         transformCritterToColored(targetColor: targetColor)
         
-        // Calculate score with power-up multipliers
+        // Calculate score with power-up and combo multipliers
         let baseScore = 10 * currentLevel
         let powerUpMultiplier = powerManager.getScoreMultiplier()
-        let finalScore = Int(Double(baseScore) * powerUpMultiplier)
+        let comboMultiplier = comboManager.getScoreMultiplier()
+        let finalScore = Int(Double(baseScore) * powerUpMultiplier * comboMultiplier)
         
         score += finalScore
         correctMatches += 1
         totalMatches += 1
         
-        // Apply coin multiplier from power-ups
+        // Apply coin multipliers from power-ups and combos
         let baseCoins = finalScore / 100 + 1
-        let coinMultiplier = powerManager.getCoinMultiplier()
-        let finalCoins = Int(Double(baseCoins) * coinMultiplier)
+        let powerUpCoinMultiplier = powerManager.getCoinMultiplier()
+        let comboCoinMultiplier = comboManager.getCoinMultiplier()
+        let finalCoins = Int(Double(baseCoins) * powerUpCoinMultiplier * comboCoinMultiplier)
         settings.coins += finalCoins
         
         GameSettings.shared.updateScore(baseScore) // Use base score for settings
@@ -928,6 +1006,13 @@ class GameScene: SKScene, AdManagerDelegate {
         if newStreak > oldStreak {
             showStreakEffect(streak: newStreak)
             challengeManager.updateStreakProgress(newStreak)
+            HapticManager.shared.streakMilestone()
+        }
+        
+        // Show combo effects
+        updateComboDisplay()
+        if comboManager.shouldShowComboEffect() {
+            showComboEffect(combo: comboManager.combo)
         }
         
         // Check for achievements
@@ -951,17 +1036,25 @@ class GameScene: SKScene, AdManagerDelegate {
         // Play level up sound and next level after delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             SoundManager.shared.playLevelUpSound()
+            HapticManager.shared.levelComplete()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             self.currentLevel += 1
-            self.startNewLevel()
+            
+            // Check for mini-game
+            if let miniGameManager = MiniGameManager(), miniGameManager.shouldShowMiniGame(level: self.currentLevel) {
+                self.showMiniGame()
+            } else {
+                self.startNewLevel()
+            }
         }
     }
     
     private func handleWrongMatch() {
         let powerManager = PowerUpManager.shared
         let settings = GameSettings.shared
+        let comboManager = ComboManager.shared
         let oldStreak = settings.currentStreak
         
         // Check for streak protection power-up
@@ -986,6 +1079,11 @@ class GameScene: SKScene, AdManagerDelegate {
         } else {
             // Normal wrong match handling
             SoundManager.shared.playWrongSound()
+            HapticManager.shared.wrongMatch()
+            
+            // Break combo chain
+            comboManager.breakCombo()
+            updateComboDisplay()
             
             // Enhanced visual feedback with streak break effect
             critterNode.run(SKAction.sequence([
@@ -1289,6 +1387,121 @@ class GameScene: SKScene, AdManagerDelegate {
         case "accuracy_90": return "90% Accuracy Master! 🎯"
         default: return "New Achievement! 🏅"
         }
+    }
+    
+    // MARK: - New Interactive Features
+    
+    private func showAnimalGallery() {
+        animalGallery = AnimalGallery()
+        animalGallery?.delegate = self
+        animalGallery?.zPosition = 200
+        addChild(animalGallery!)
+        animalGallery?.showGallery()
+    }
+    
+    private func showMiniGame() {
+        miniGameManager = MiniGameManager()
+        miniGameManager?.delegate = self
+        addChild(miniGameManager!)
+        miniGameManager?.startRandomMiniGame(screenSize: self.size)
+    }
+    
+    private func updateComboDisplay() {
+        let combo = ComboManager.shared.combo
+        
+        if combo > 1 {
+            comboLabel.text = "⚡ \(combo)x"
+            comboLabel.fontColor = ComboManager.shared.getComboColor()
+            comboLabel.alpha = 1.0
+            
+            // Pulse animation for active combos
+            let pulse = SKAction.sequence([
+                SKAction.scale(to: 1.2, duration: 0.2),
+                SKAction.scale(to: 1.0, duration: 0.2)
+            ])
+            comboLabel.run(pulse)
+        } else {
+            comboLabel.alpha = 0.3
+            comboLabel.text = "⚡ 0x"
+            comboLabel.fontColor = .systemGray
+        }
+    }
+    
+    private func showComboEffect(combo: Int) {
+        if let message = ComboManager.shared.getComboMessage() {
+            showFloatingText(message, at: CGPoint(x: size.width/2, y: size.height/2 + 100), color: ComboManager.shared.getComboColor())
+        }
+        
+        let intensity = ComboManager.shared.getComboEffectIntensity()
+        
+        // Screen shake for high combos
+        if intensity == .high || intensity == .extreme {
+            let shakeIntensity = intensity.screenShakeIntensity
+            let shake = SKAction.sequence([
+                SKAction.moveBy(x: shakeIntensity, y: 0, duration: 0.05),
+                SKAction.moveBy(x: -shakeIntensity * 2, y: 0, duration: 0.05),
+                SKAction.moveBy(x: shakeIntensity, y: 0, duration: 0.05)
+            ])
+            self.run(shake)
+        }
+    }
+    
+    private func showCollectionReward(_ reward: CollectionReward) {
+        let message = "\(reward.title) +\(reward.coins) coins!"
+        showFloatingText(message, at: CGPoint(x: size.width/2, y: size.height/2 + 150), color: .systemYellow)
+        
+        // Add coins to player
+        GameSettings.shared.coins += reward.coins
+        updateGamificationUI()
+        
+        HapticManager.shared.collectionComplete()
+    }
+    
+    private func shareProgress() {
+        if let viewController = self.view?.window?.rootViewController {
+            SocialSharingManager.shared.shareGameStats(from: viewController)
+        }
+        togglePause() // Close pause menu
+    }
+    
+    private func shareAnimalComplete() {
+        if let viewController = self.view?.window?.rootViewController {
+            SocialSharingManager.shared.shareColoredAnimal(currentAnimalName, color: targetColor, level: currentLevel, from: viewController)
+        }
+    }
+}
+
+// MARK: - AnimalGalleryDelegate
+extension GameScene: AnimalGalleryDelegate {
+    func galleryDidClose() {
+        animalGallery?.removeFromParent()
+        animalGallery = nil
+    }
+}
+
+// MARK: - MiniGameDelegate
+extension GameScene: MiniGameDelegate {
+    func miniGameCompleted(score: Int, coins: Int) {
+        // Award bonus rewards
+        GameSettings.shared.coins += coins
+        GameSettings.shared.updateScore(score)
+        updateGamificationUI()
+        
+        showFloatingText("Mini-Game Complete! +\(coins) coins!", 
+                        at: CGPoint(x: size.width/2, y: size.height/2), 
+                        color: .systemGreen)
+        
+        HapticManager.shared.levelComplete()
+        
+        // Continue to next level
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.startNewLevel()
+        }
+    }
+    
+    func miniGameSkipped() {
+        // Just continue to next level
+        startNewLevel()
     }
 }
 
