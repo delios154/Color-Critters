@@ -21,7 +21,7 @@ class GameScene: SKScene, AdManagerDelegate {
     // MARK: - UI Elements
     private var scoreLabel: SKLabelNode!
     private var levelLabel: SKLabelNode!
-    private var critterNode: SKSpriteNode!
+    private var critterNode: SKNode!
     private var colorBlobs: [SKSpriteNode] = []
     private var targetColor: UIColor!
     private var backgroundNode: SKSpriteNode!
