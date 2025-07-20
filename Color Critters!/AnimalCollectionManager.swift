@@ -109,36 +109,7 @@ class AnimalCollectionManager {
         return getCollection().filter { $0.colorName == colorName }
     }
     
-    // MARK: - Rewards and Achievements
-    
-    func checkForCollectionRewards() -> [CollectionReward] {
-        let stats = getCollectionStats()
-        var rewards: [CollectionReward] = []
-        
-        // Milestone rewards
-        if stats.unique == 10 {
-            rewards.append(.milestone("First 10 Animals!", 50))
-        } else if stats.unique == 25 {
-            rewards.append(.milestone("Quarter Collection!", 100))
-        } else if stats.unique == 50 {
-            rewards.append(.milestone("Half Complete!", 200))
-        } else if stats.unique == 75 {
-            rewards.append(.milestone("Three Quarters!", 300))
-        } else if stats.unique == 100 {
-            rewards.append(.milestone("Master Collector!", 500))
-        }
-        
-        // Color completion rewards
-        for color in getAllColors() {
-            let colorAnimals = getAnimalsForColor(color)
-            if colorAnimals.count == 10 { // All 10 animals in this color
-                let colorName = Self.colorName(for: color)
-                rewards.append(.colorComplete(colorName, 25))
-            }
-        }
-        
-        return rewards
-    }
+
     
     // MARK: - Helper Methods
     
