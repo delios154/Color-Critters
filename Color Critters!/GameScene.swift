@@ -1473,7 +1473,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
 }
 
 // MARK: - AnimalGalleryDelegate
-extension GameScene: AnimalGalleryDelegate {
+extension GameScene {
     func galleryDidClose() {
         animalGallery?.removeFromParent()
         animalGallery = nil
@@ -1481,7 +1481,7 @@ extension GameScene: AnimalGalleryDelegate {
 }
 
 // MARK: - MiniGameDelegate
-extension GameScene: MiniGameDelegate {
+extension GameScene {
     func miniGameCompleted(score: Int, coins: Int) {
         // Award bonus rewards
         GameSettings.shared.coins += coins
