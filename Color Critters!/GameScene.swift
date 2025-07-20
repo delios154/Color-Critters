@@ -88,6 +88,12 @@ class GameScene: SKScene, AdManagerDelegate {
     
     override func sceneDidLoad() {
         super.sceneDidLoad()
+        
+        // Generate animal images if needed (for development)
+        #if DEBUG
+        GenerateAnimalImages.saveImagesToDocuments()
+        #endif
+        
         setupGame()
     }
     
@@ -405,12 +411,71 @@ class GameScene: SKScene, AdManagerDelegate {
     }
     
     private func createCritter(named critterName: String, targetColor: UIColor) {
-        // Create a simple critter shape (in real app, use actual critter images)
-        let critterSize = CGSize(width: 140, height: 140)
-        critterNode = SKSpriteNode.roundedRect(color: .lightGray, size: critterSize, cornerRadius: 70)
+        let critterSize = CGSize(width: 100, height: 100)
+        
+        // Create a container for both versions of the critter
+        critterNode = SKNode()
         critterNode.position = CGPoint(x: self.size.width/2, y: self.size.height * 0.65)
         critterNode.zPosition = 5
         critterNode.name = "critter"
+        
+        // Generate the animal image
+        if let animalImage = AnimalImageGenerator.generateAnimalImage(for: critterName, size: critterSize) {
+            
+            // Create the colorless (gray) version - what the animal currently looks like
+            if let grayImage = animalImage.tinted(with: .lightGray) {
+                let grayTexture = SKTexture(image: grayImage)
+                let graySprite = SKSpriteNode(texture: grayTexture)
+                graySprite.position = CGPoint(x: -60, y: 0)
+                graySprite.size = critterSize
+                graySprite.name = "gray_critter"
+                critterNode.addChild(graySprite)
+                
+                // Add "Current" label
+                let currentLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
+                currentLabel.text = "Now"
+                currentLabel.fontSize = 12
+                currentLabel.fontColor = .darkGray
+                currentLabel.position = CGPoint(x: 0, y: -65)
+                graySprite.addChild(currentLabel)
+            }
+            
+            // Create the target colored version - what the animal should look like
+            if let tintedImage = animalImage.tinted(with: targetColor) {
+                let coloredTexture = SKTexture(image: tintedImage)
+                let coloredSprite = SKSpriteNode(texture: coloredTexture)
+                coloredSprite.position = CGPoint(x: 60, y: 0)
+                coloredSprite.size = critterSize
+                coloredSprite.name = "colored_critter"
+                critterNode.addChild(coloredSprite)
+                
+                // Add "Target" label
+                let targetLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
+                targetLabel.text = "Goal"
+                targetLabel.fontSize = 12
+                targetLabel.fontColor = .darkGray
+                targetLabel.position = CGPoint(x: 0, y: -65)
+                coloredSprite.addChild(targetLabel)
+            }
+            
+        } else {
+            // Fallback to colored circles if image generation fails
+            let grayCircle = SKSpriteNode.roundedRect(color: .lightGray, size: critterSize, cornerRadius: 50)
+            grayCircle.position = CGPoint(x: -60, y: 0)
+            critterNode.addChild(grayCircle)
+            
+            let coloredCircle = SKSpriteNode.roundedRect(color: targetColor, size: critterSize, cornerRadius: 50)
+            coloredCircle.position = CGPoint(x: 60, y: 0)
+            critterNode.addChild(coloredCircle)
+        }
+        
+        // Add arrow between them
+        let arrowLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        arrowLabel.text = "→"
+        arrowLabel.fontSize = 24
+        arrowLabel.fontColor = .darkGray
+        arrowLabel.position = CGPoint(x: 0, y: -5)
+        critterNode.addChild(arrowLabel)
         
         // Add critter name label
         let nameLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
@@ -422,7 +487,7 @@ class GameScene: SKScene, AdManagerDelegate {
         
         // Add "needs color" indicator
         let needsColorLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
-        needsColorLabel.text = "Needs \(colorName(for: targetColor))!"
+        needsColorLabel.text = "Help the \(critterName) become \(colorName(for: targetColor))!"
         needsColorLabel.fontSize = 16
         needsColorLabel.fontColor = .darkGray
         needsColorLabel.position = CGPoint(x: 0, y: -115)
@@ -433,7 +498,7 @@ class GameScene: SKScene, AdManagerDelegate {
         
         addChild(critterNode)
         
-        print("Created critter: \(critterName) at position \(critterNode.position)")
+        print("Created critter: \(critterName) with target color: \(colorName(for: targetColor)) at position \(critterNode.position)")
     }
     
     private func createColorBlobs(count: Int, targetColor: UIColor) {
@@ -822,9 +887,8 @@ class GameScene: SKScene, AdManagerDelegate {
         // Add celebration particle effect
         createCelebrationParticles(at: critterNode.position)
         
-        // Color the critter with sparkle effect
-        let colorAction = SKAction.colorize(with: targetColor, colorBlendFactor: 1.0, duration: 0.5)
-        critterNode.run(colorAction)
+        // Transform the critter from gray to colored with special effect
+        transformCritterToColored(targetColor: targetColor)
         
         // Calculate score with power-up multipliers
         let baseScore = 10 * currentLevel
@@ -1297,6 +1361,75 @@ extension GameScene: PowerUpUIDelegate {
                 
                 break
             }
+        }
+    }
+    
+    private func transformCritterToColored(targetColor: UIColor) {
+        // Find the gray critter and make it disappear with animation
+        if let graySprite = critterNode.childNode(withName: "gray_critter") as? SKSpriteNode {
+            let fadeOut = SKAction.fadeAlpha(to: 0.0, duration: 0.3)
+            let scaleDown = SKAction.scale(to: 0.1, duration: 0.3)
+            let disappear = SKAction.group([fadeOut, scaleDown])
+            graySprite.run(disappear)
+        }
+        
+        // Find the colored critter and make it animate into place
+        if let coloredSprite = critterNode.childNode(withName: "colored_critter") as? SKSpriteNode {
+            // Move the colored version to the center with animation
+            let moveToCenter = SKAction.move(to: CGPoint(x: 0, y: 0), duration: 0.5)
+            let scaleUp = SKAction.sequence([
+                SKAction.scale(to: 1.3, duration: 0.3),
+                SKAction.scale(to: 1.0, duration: 0.2)
+            ])
+            let celebrate = SKAction.group([moveToCenter, scaleUp])
+            
+            coloredSprite.run(celebrate)
+            
+            // Add sparkle effect
+            addSparkleEffect(to: coloredSprite)
+        }
+        
+        // Update the arrow and hide it after animation
+        for child in critterNode.children {
+            if let label = child as? SKLabelNode, label.text == "→" {
+                let fadeOutArrow = SKAction.fadeAlpha(to: 0.0, duration: 0.5)
+                label.run(fadeOutArrow)
+                break
+            }
+        }
+        
+        // Update the instruction text
+        for child in critterNode.children {
+            if let label = child as? SKLabelNode, let text = label.text, text.contains("Help") {
+                label.text = "Perfect! The critter is now \(colorName(for: targetColor))!"
+                label.fontColor = targetColor
+                break
+            }
+        }
+    }
+    
+    private func addSparkleEffect(to node: SKSpriteNode) {
+        // Create simple sparkle particles
+        for i in 0..<8 {
+            let sparkle = SKSpriteNode(color: .yellow, size: CGSize(width: 4, height: 4))
+            sparkle.position = node.position
+            sparkle.zPosition = 10
+            
+            let angle = CGFloat(i) * CGFloat.pi / 4
+            let distance: CGFloat = 60
+            let targetPosition = CGPoint(
+                x: node.position.x + cos(angle) * distance,
+                y: node.position.y + sin(angle) * distance
+            )
+            
+            let moveOut = SKAction.move(to: targetPosition, duration: 0.5)
+            let fadeOut = SKAction.fadeAlpha(to: 0.0, duration: 0.5)
+            let sparkleAction = SKAction.group([moveOut, fadeOut])
+            let removeSparkle = SKAction.removeFromParent()
+            let sequence = SKAction.sequence([sparkleAction, removeSparkle])
+            
+            critterNode.addChild(sparkle)
+            sparkle.run(sequence)
         }
     }
 }
