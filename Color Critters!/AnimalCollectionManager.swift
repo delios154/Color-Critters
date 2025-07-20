@@ -170,11 +170,10 @@ class AnimalCollectionManager {
             .systemPink, .brown, .cyan, .magenta
         ]
     }
-}
-
-// MARK: - Collection Rewards
-
-func checkForCollectionRewards() -> [CollectionReward] {
+    
+    // MARK: - Collection Rewards
+    
+    func checkForCollectionRewards() -> [CollectionReward] {
     let collection = getCollection()
     var rewards: [CollectionReward] = []
     
@@ -198,6 +197,8 @@ func checkForCollectionRewards() -> [CollectionReward] {
     }
     
     return rewards
+}
+
 }
 
 // MARK: - Data Models
