@@ -22,6 +22,15 @@ enum ComboEffectIntensity {
         case .extreme: return 15.0
         }
     }
+    
+    var particleCount: Int {
+        switch self {
+        case .low: return 20
+        case .medium: return 40
+        case .high: return 60
+        case .extreme: return 100
+        }
+    }
 }
 
 class ComboManager {
@@ -203,29 +212,4 @@ struct ComboStats {
     let coinMultiplier: Double
     let xpMultiplier: Double
     let timeRemaining: TimeInterval?
-}
-
-enum ComboEffectIntensity {
-    case low
-    case medium
-    case high
-    case extreme
-    
-    var particleCount: Int {
-        switch self {
-        case .low: return 20
-        case .medium: return 40
-        case .high: return 60
-        case .extreme: return 100
-        }
-    }
-    
-    var screenShakeIntensity: CGFloat {
-        switch self {
-        case .low: return 2.0
-        case .medium: return 4.0
-        case .high: return 6.0
-        case .extreme: return 8.0
-        }
-    }
 }
