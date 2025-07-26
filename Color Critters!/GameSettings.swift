@@ -34,6 +34,7 @@ class GameSettings {
     private let lastPlayDateKey = "lastPlayDate"
     private let experiencePointsKey = "experiencePoints"
     private let playerLevelKey = "playerLevel"
+    private let hasCompletedOnboardingKey = "hasCompletedOnboarding"
     
     private init() {}
     
@@ -214,6 +215,14 @@ class GameSettings {
         get { defaults.integer(forKey: playerLevelKey) == 0 ? 1 : defaults.integer(forKey: playerLevelKey) }
         set { 
             defaults.set(newValue, forKey: playerLevelKey)
+            defaults.synchronize()
+        }
+    }
+    
+    var hasCompletedOnboarding: Bool {
+        get { defaults.bool(forKey: hasCompletedOnboardingKey) }
+        set {
+            defaults.set(newValue, forKey: hasCompletedOnboardingKey)
             defaults.synchronize()
         }
     }
