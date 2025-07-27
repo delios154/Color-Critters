@@ -105,10 +105,20 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     
     override func didMove(to view: SKView) {
         super.didMove(to: view)
-        // Ensure proper scene setup after view is ready
-        if critterNode == nil {
-            setupGame()
+        
+        // Optimize scene performance
+        PerformanceManager.shared.optimizeScene(self)
+        
+        // Preload assets for better performance
+        PerformanceManager.shared.preloadGameAssets {
+            // Ensure proper scene setup after view is ready
+            if self.critterNode == nil {
+                self.setupGame()
+            }
         }
+        
+        // Configure accessibility
+        AccessibilityManager.shared.configureForGuidedAccess(scene: self)
     }
     
     private func setupGame() {
@@ -576,6 +586,16 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
             roundedBlob.zPosition = 5
             roundedBlob.name = "colorBlob_\(i)"
             
+            // Add inner glow effect
+            let glowNode = SKShapeNode(circleOfRadius: 30)
+            glowNode.fillColor = .white
+            glowNode.alpha = 0.3
+            glowNode.blendMode = .add
+            roundedBlob.addChild(glowNode)
+            
+            // Configure accessibility
+            AccessibilityManager.shared.configureColorBlobAccessibility(roundedBlob, color: colorName(for: currentColor))
+            
             // Store the actual color in userData for later retrieval
             roundedBlob.userData = NSMutableDictionary()
             roundedBlob.userData?.setValue(currentColor, forKey: "actualColor")
@@ -631,11 +651,15 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     
     // MARK: - Tutorial and Stats Methods
     private func startTutorialIfNeeded() {
-        // For testing - disable tutorial entirely
-        GameSettings.shared.hasSeenTutorial = true
-        
-        // Tutorial is disabled for now
-        if false {
+        if !GameSettings.shared.hasCompletedOnboarding {
+            // Show enhanced onboarding flow for first-time users
+            let onboarding = OnboardingManager(in: self) { [weak self] in
+                self?.startNewLevel()
+            }
+            addChild(onboarding)
+            GameSettings.shared.hasSeenTutorial = true
+        } else if !GameSettings.shared.hasSeenTutorial {
+            // Show regular tutorial for returning users
             tutorialOverlay = TutorialOverlay()
             tutorialOverlay?.delegate = self
             tutorialOverlay?.zPosition = 200
@@ -680,6 +704,21 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         let touchedNode = atPoint(location)
         
         print("Touch detected at: \(location), touched node: \(touchedNode.name ?? "unknown")")
+        
+        // Handle level complete overlay touches
+        if let overlay = childNode(withName: "levelCompleteOverlay") {
+            let nodesAtPoint = nodes(at: location)
+            for node in nodesAtPoint {
+                if node.name == "continueButton" {
+                    if let completion = overlay.userData?["completion"] as? () -> Void {
+                        overlay.removeFromParent()
+                        completion()
+                    }
+                    return
+                }
+            }
+            return // Don't process other touches while overlay is shown
+        }
         
         // Handle tutorial elements first
         if tutorialOverlay != nil && tutorialOverlay!.isActive {
@@ -758,6 +797,18 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         guard let touch = touches.first, isDragging, let draggedNode = draggedNode else { return }
         let location = touch.location(in: self)
         draggedNode.position = location
+        
+        // Add trail effect while dragging
+        if draggedNode.childNode(withName: "trailEmitter") == nil {
+            if let color = draggedNode.userData?["actualColor"] as? UIColor {
+                let trail = AnimationManager.shared.createTrailEffect(for: draggedNode, color: color)
+                trail.name = "trailEmitter"
+                draggedNode.addChild(trail)
+            }
+        }
+        
+        // Show proximity feedback
+        FeedbackManager.shared.showProximityFeedback(draggedNode: draggedNode, targetNode: critterNode, in: self)
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -864,6 +915,15 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     
     private func stopDragging() {
         isDragging = false
+        
+        // Remove trail effect
+        if let trail = draggedNode?.childNode(withName: "trailEmitter") {
+            trail.removeFromParent()
+        }
+        
+        // Hide proximity feedback
+        FeedbackManager.shared.hideProximityFeedback(in: self)
+        
         draggedNode?.setScale(1.0)
         draggedNode?.zPosition = 5
         draggedNode = nil
@@ -945,8 +1005,22 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         SoundManager.shared.playCorrectSound()
         HapticManager.shared.correctMatch()
         
+        // Enhanced visual feedback with particle effects
+        if let critter = critterNode {
+            AnimationManager.shared.createColorSplash(at: critter.position, in: self, color: targetColor)
+            AnimationManager.shared.celebrateSuccess(at: critter.position, in: self)
+            
+            // Animate the critter with elastic scaling
+            critter.run(AnimationManager.shared.elasticScale(to: 1.2, duration: 0.4)) {
+                critter.run(SKAction.scale(to: 1.0, duration: 0.2))
+            }
+        }
+        
         // Add animal to collection
         AnimalCollectionManager.shared.addAnimal(name: currentAnimalName, color: targetColor, level: currentLevel)
+        
+        // Accessibility announcement
+        AccessibilityManager.shared.announceSuccess(critterName: currentAnimalName, color: colorName(for: targetColor))
         
         // Check for collection rewards
         let collectionRewards = AnimalCollectionManager.shared.checkForCollectionRewards()
@@ -1019,6 +1093,8 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         checkForNewAchievements()
         
         // Show dynamic success message based on streak and power-ups
+        let feedbackPosition = CGPoint(x: critterNode.position.x, y: critterNode.position.y + 100)
+        FeedbackManager.shared.showEncouragementBubble(at: feedbackPosition, in: self)
         var successMessage = getSuccessMessage(streak: newStreak)
         if powerUpMultiplier > 1.0 {
             successMessage += " ⚡"
@@ -1037,17 +1113,22 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             SoundManager.shared.playLevelUpSound()
             HapticManager.shared.levelComplete()
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.currentLevel += 1
             
-            // Check for mini-game
-            let miniGameManager = MiniGameManager()
-            if miniGameManager.shouldShowMiniGame(level: self.currentLevel) {
-                self.showMiniGame()
-            } else {
-                self.startNewLevel()
+            // Calculate stars based on accuracy
+            let accuracy = Double(correctMatches) / Double(max(totalMatches, 1))
+            let stars = accuracy >= 0.9 ? 3 : (accuracy >= 0.7 ? 2 : 1)
+            
+            // Show enhanced level complete feedback
+            FeedbackManager.shared.showLevelCompleteFeedback(in: self, stars: stars) {
+                self.currentLevel += 1
+                
+                // Check for mini-game
+                let miniGameManager = MiniGameManager()
+                if miniGameManager.shouldShowMiniGame(level: self.currentLevel) {
+                    self.showMiniGame()
+                } else {
+                    self.startNewLevel()
+                }
             }
         }
     }
@@ -1232,6 +1313,14 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     }
     
     private func showStreakEffect(streak: Int) {
+        // Use enhanced feedback manager for better visual effects
+        let position = CGPoint(x: size.width/2, y: size.height/2 + 100)
+        
+        // Show milestone feedback for specific streak values
+        if streak % 5 == 0 || streak == 3 {
+            FeedbackManager.shared.showStreakMilestone(streak, at: position, in: self)
+        }
+        
         // Create streak milestone effects
         if streak == 3 {
             showFloatingText("STREAK x3! 🚀", at: CGPoint(x: size.width/2, y: size.height/2 + 50), color: .systemOrange)
