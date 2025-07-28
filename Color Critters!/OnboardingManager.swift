@@ -67,7 +67,7 @@ class OnboardingManager: SKNode {
     private var nextButton: SKSpriteNode!
     private var skipButton: SKSpriteNode!
     private var progressDots: [SKShapeNode] = []
-    private var spotlightNode: SKShapeNode?
+    private var spotlightNode: SKNode?
     private var arrowIndicator: SKSpriteNode?
     
     private weak var gameScene: SKScene?
@@ -387,8 +387,8 @@ class OnboardingManager: SKNode {
         insertChild(overlay, at: 1)
         
         // Animate spotlight
-        spotlight.alpha = 0
-        spotlight.run(SKAction.fadeIn(withDuration: 0.3))
+        overlay.alpha = 0
+        overlay.run(SKAction.fadeIn(withDuration: 0.3))
     }
     
     private func createArrowIndicator() {
