@@ -319,7 +319,9 @@ class OnboardingManager: SKNode {
     }
     
     private func showSuccess() {
-        AnimationManager.shared.celebrateSuccess(at: CGPoint.zero, in: self)
+        if let scene = self.scene {
+            AnimationManager.shared.celebrateSuccess(at: CGPoint.zero, in: scene)
+        }
     }
     
     private func showFeatures() {
@@ -360,23 +362,29 @@ class OnboardingManager: SKNode {
         
         guard let scene = gameScene else { return }
         
-        let spotlight = SKShapeNode()
-        let path = CGMutablePath()
+        // Create a dark overlay with a transparent circle for spotlight effect
+        let overlay = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.3), size: scene.size)
+        overlay.zPosition = 999
+        overlay.position = CGPoint(x: scene.size.width/2, y: scene.size.height/2)
         
-        // Create outer rectangle (full screen)
-        path.addRect(CGRect(x: -scene.size.width/2, y: -scene.size.height/2, width: scene.size.width, height: scene.size.height))
+        // Create a mask node with a circle
+        let maskNode = SKShapeNode(circleOfRadius: radius)
+        maskNode.fillColor = .white
+        maskNode.strokeColor = .clear
+        maskNode.position = position
         
-        // Create inner circle (spotlight)
-        path.addEllipse(in: CGRect(x: position.x - radius, y: position.y - radius, width: radius * 2, height: radius * 2))
+        // Create crop node for the spotlight effect
+        let cropNode = SKCropNode()
+        cropNode.maskNode = maskNode
+        cropNode.zPosition = 1000
         
-        spotlight.path = path
-        spotlight.fillColor = UIColor.black.withAlphaComponent(0.3)
-        spotlight.fillRule = .evenOdd
-        spotlight.zPosition = 999
-        spotlight.position = CGPoint(x: scene.size.width/2, y: scene.size.height/2)
+        // Add a clear node to the crop node (this creates the hole)
+        let clearNode = SKSpriteNode(color: .clear, size: scene.size)
+        clearNode.position = CGPoint(x: scene.size.width/2, y: scene.size.height/2)
+        cropNode.addChild(clearNode)
         
-        spotlightNode = spotlight
-        insertChild(spotlight, at: 1)
+        spotlightNode = overlay
+        insertChild(overlay, at: 1)
         
         // Animate spotlight
         spotlight.alpha = 0
@@ -432,7 +440,7 @@ class OnboardingManager: SKNode {
     }
     
     private func handleNext() {
-        HapticManager.shared.playHaptic(.light)
+        HapticManager.shared.buttonTap()
         
         if let nextStep = OnboardingStep(rawValue: currentStep.rawValue + 1) {
             currentStep = nextStep
@@ -443,7 +451,7 @@ class OnboardingManager: SKNode {
     }
     
     private func handleSkip() {
-        HapticManager.shared.playHaptic(.light)
+        HapticManager.shared.buttonTap()
         
         let alert = SKNode()
         // In a real implementation, you'd show a confirmation dialog
