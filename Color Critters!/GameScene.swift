@@ -106,22 +106,31 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     override func didMove(to view: SKView) {
         super.didMove(to: view)
         
-        // Optimize scene performance
-        PerformanceManager.shared.optimizeScene(self)
-        
-        // Preload assets for better performance
-        PerformanceManager.shared.preloadGameAssets {
-            // Ensure proper scene setup after view is ready
-            if self.critterNode == nil {
-                self.setupGame()
+        // Only setup once to avoid duplicate initialization
+        if critterNode == nil {
+            // Optimize scene performance
+            PerformanceManager.shared.optimizeScene(self)
+            
+            // Preload assets for better performance
+            PerformanceManager.shared.preloadGameAssets {
+                // Ensure proper scene setup after view is ready
+                if self.critterNode == nil {
+                    self.setupGame()
+                }
             }
+            
+            // Configure accessibility
+            AccessibilityManager.shared.configureForGuidedAccess(scene: self)
         }
-        
-        // Configure accessibility
-        AccessibilityManager.shared.configureForGuidedAccess(scene: self)
     }
     
     private func setupGame() {
+        // Prevent multiple initializations
+        if critterNode != nil {
+            print("Warning: Game already initialized, skipping setup")
+            return
+        }
+        
         // Load saved game state
         loadGameState()
         
@@ -190,6 +199,15 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     }
     
     private func setupUI() {
+        // Safety check: ensure scene size is valid
+        guard self.size.width > 0 && self.size.height > 0 else {
+            print("Warning: Scene size is invalid, delaying UI setup")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.setupUI()
+            }
+            return
+        }
+        
         let settings = GameSettings.shared
         
         // Score label
