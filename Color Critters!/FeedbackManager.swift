@@ -255,7 +255,7 @@ class FeedbackManager {
                 if i < stars {
                     // Add particle effect for earned stars
                     AnimationManager.shared.createStarBurst(at: star.position, in: scene, color: .systemYellow)
-                    HapticManager.shared.playHaptic(.success)
+                    HapticManager.shared.correctMatch()
                 }
             }
         }
