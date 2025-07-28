@@ -153,6 +153,7 @@ class TutorialOverlay: SKNode {
     }
     
     private func completeTutorial() {
+        print("Completing tutorial, removing overlay")
         isActive = false
         removeFromParent()
         delegate?.tutorialDidComplete()
@@ -162,7 +163,10 @@ class TutorialOverlay: SKNode {
     func handleTouch(at location: CGPoint) {
         let touchedNode = atPoint(location)
         
+        print("Tutorial touch at: \(location), touched node: \(touchedNode.name ?? "unknown")")
+        
         if touchedNode.name == "continueButton" {
+            print("Continue button pressed, moving to next step")
             SoundManager.shared.playTapSound()
             nextStep()
         }

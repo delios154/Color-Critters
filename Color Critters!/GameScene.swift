@@ -740,10 +740,14 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         
         // Handle tutorial elements first
         if tutorialOverlay != nil && tutorialOverlay!.isActive {
-            if touchedNode.name == "continueButton" {
-                SoundManager.shared.playTapSound()
-                tutorialOverlay?.handleTouch(at: location)
-                return
+            // Check for tutorial touches by looking at all nodes at the touch location
+            let nodesAtPoint = nodes(at: location)
+            for node in nodesAtPoint {
+                if node.name == "continueButton" {
+                    SoundManager.shared.playTapSound()
+                    tutorialOverlay?.handleTouch(at: location)
+                    return
+                }
             }
             
             if touchedNode.name == "skipTutorialButton" {
@@ -1616,6 +1620,7 @@ extension GameScene {
 // MARK: - TutorialOverlayDelegate
 extension GameScene: TutorialOverlayDelegate {
     func tutorialDidComplete() {
+        print("Tutorial delegate called, removing tutorial overlay")
         tutorialOverlay?.removeFromParent()
         tutorialOverlay = nil
         
@@ -1623,6 +1628,7 @@ extension GameScene: TutorialOverlayDelegate {
         childNode(withName: "skipTutorialButton")?.removeFromParent()
         
         GameSettings.shared.hasSeenTutorial = true
+        print("Tutorial completed and settings updated")
     }
 }
 
