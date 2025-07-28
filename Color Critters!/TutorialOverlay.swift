@@ -80,8 +80,11 @@ class TutorialOverlay: SKNode {
         removeAllChildren()
         
         // Create a centered overlay for better visibility
+        let sceneSize = self.scene?.size ?? CGSize.zero
+        print("Tutorial overlay using scene size: \(sceneSize)")
+        
         let overlay = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.3), size: CGSize(width: 350, height: 120))
-        overlay.position = CGPoint(x: (self.scene?.size.width ?? 0) / 2, y: (self.scene?.size.height ?? 0) / 2)
+        overlay.position = CGPoint(x: sceneSize.width / 2, y: sceneSize.height / 2)
         overlay.name = "tutorialOverlay"
         addChild(overlay)
         

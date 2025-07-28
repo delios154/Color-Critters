@@ -106,6 +106,8 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     override func didMove(to view: SKView) {
         super.didMove(to: view)
         
+        print("didMove(to view:) called with scene size: \(self.size), view size: \(view.bounds.size)")
+        
         // Only setup once to avoid duplicate initialization
         if critterNode == nil {
             // Optimize scene performance
@@ -125,6 +127,8 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     }
     
     private func setupGame() {
+        print("setupGame() called with scene size: \(self.size)")
+        
         // Prevent multiple initializations
         if critterNode != nil {
             print("Warning: Game already initialized, skipping setup")
@@ -199,6 +203,8 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     }
     
     private func setupUI() {
+        print("Setting up UI with scene size: \(self.size)")
+        
         // Safety check: ensure scene size is valid
         guard self.size.width > 0 && self.size.height > 0 else {
             print("Warning: Scene size is invalid, delaying UI setup")
