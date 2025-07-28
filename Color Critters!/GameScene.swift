@@ -1115,7 +1115,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
             HapticManager.shared.levelComplete()
             
             // Calculate stars based on accuracy
-            let accuracy = Double(correctMatches) / Double(max(totalMatches, 1))
+            let accuracy = Double(self.correctMatches) / Double(max(self.totalMatches, 1))
             let stars = accuracy >= 0.9 ? 3 : (accuracy >= 0.7 ? 2 : 1)
             
             // Show enhanced level complete feedback
