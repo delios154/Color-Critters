@@ -39,7 +39,19 @@ class TutorialOverlay: SKNode {
     private func setupTutorialSteps() {
         tutorialSteps = [
             TutorialStep(
-                message: "Welcome to Color Critters! 🎨\nDrag the magenta blob to the bear!",
+                message: "Welcome to Color Critters! 🎨\nHelp the critters get their colors back!",
+                highlightNode: nil,
+                position: nil,
+                action: nil
+            ),
+            TutorialStep(
+                message: "Drag the colored blobs to match the target color!",
+                highlightNode: nil,
+                position: nil,
+                action: nil
+            ),
+            TutorialStep(
+                message: "Great! You're ready to play! 🎉",
                 highlightNode: nil,
                 position: nil,
                 action: nil
@@ -67,14 +79,14 @@ class TutorialOverlay: SKNode {
         // Clear previous step
         removeAllChildren()
         
-        // Create a very small, non-blocking overlay at the very top
-        let overlay = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.2), size: CGSize(width: 300, height: 80))
-        overlay.position = CGPoint(x: (self.scene?.size.width ?? 0) / 2, y: (self.scene?.size.height ?? 0) - 50)
+        // Create a centered overlay for better visibility
+        let overlay = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.3), size: CGSize(width: 350, height: 120))
+        overlay.position = CGPoint(x: (self.scene?.size.width ?? 0) / 2, y: (self.scene?.size.height ?? 0) / 2)
         overlay.name = "tutorialOverlay"
         addChild(overlay)
         
         // Create message container
-        let messageContainer = SKSpriteNode.roundedRect(color: .white, size: CGSize(width: 290, height: 70), cornerRadius: 15)
+        let messageContainer = SKSpriteNode.roundedRect(color: .white, size: CGSize(width: 330, height: 80), cornerRadius: 15)
         messageContainer.position = CGPoint(x: 0, y: 0)
         messageContainer.name = "messageContainer"
         overlay.addChild(messageContainer)
@@ -82,10 +94,10 @@ class TutorialOverlay: SKNode {
         // Create message label
         let messageLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         messageLabel.text = step.message
-        messageLabel.fontSize = 14
+        messageLabel.fontSize = 16
         messageLabel.fontColor = .darkGray
         messageLabel.numberOfLines = 0
-        messageLabel.preferredMaxLayoutWidth = 270
+        messageLabel.preferredMaxLayoutWidth = 310
         messageLabel.verticalAlignmentMode = .center
         messageLabel.position = CGPoint(x: 0, y: 0)
         messageContainer.addChild(messageLabel)

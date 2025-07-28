@@ -16,22 +16,23 @@ class GameViewController: UIViewController {
         
         // Configure the view
         if let view = self.view as! SKView? {
-            // Create the scene with proper size
-            let scene = GameScene(size: view.bounds.size)
-                
-                // Set the scale mode to scale to fit the window
-            scene.scaleMode = .aspectFill
-                
-                // Present the scene
+            // Use a standard size for consistent gameplay across devices
+            let sceneSize = CGSize(width: 390, height: 844) // iPhone 14 size as base
+            let scene = GameScene(size: sceneSize)
+            
+            // Set the scale mode to scale to fit the window
+            scene.scaleMode = .aspectFit
+            
+            // Present the scene
             view.presentScene(scene)
-                    
+            
             // Configure view settings
-                    view.ignoresSiblingOrder = true
-                    
+            view.ignoresSiblingOrder = true
+            
             // Enable debugging in development
             #if DEBUG
-                    view.showsFPS = true
-                    view.showsNodeCount = true
+            view.showsFPS = true
+            view.showsNodeCount = true
             view.showsPhysics = false
             #endif
         }
@@ -49,10 +50,8 @@ class GameViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
-        // Update scene size if needed
-        if let view = self.view as? SKView, let scene = view.scene {
-            scene.size = view.bounds.size
-        }
+        // Keep the scene size consistent for better gameplay
+        // The scene will scale to fit the view automatically
     }
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
