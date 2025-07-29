@@ -1706,16 +1706,18 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
                     SKAction.scale(to: 1.0, duration: 0.3)
                 ])
                 blob.run(hint)
-                
+
                 // Add a glow effect
                 let glow = SKSpriteNode(color: .systemYellow, size: CGSize(width: 80, height: 80))
                 glow.alpha = 0.5
                 glow.position = blob.position
                 glow.zPosition = blob.zPosition - 1
-    func galleryDidClose() {
-        animalGallery?.removeFromParent()
-        animalGallery = nil
-    }
+                addChild(glow)
+                let fadeOut = SKAction.fadeOut(withDuration: 0.6)
+                let remove = SKAction.removeFromParent()
+                glow.run(SKAction.sequence([fadeOut, remove]))
+            }
+        }
     }
     
     // MARK: - MiniGameDelegate
