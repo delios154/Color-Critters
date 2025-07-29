@@ -11,6 +11,11 @@ import AVFoundation
 
 class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDelegate {
     
+    // MARK: - Layout Properties
+    private var safeAreaInsets: UIEdgeInsets = .zero
+    private var screenBounds: CGRect = .zero
+    private var layoutGuide: LayoutGuide!
+    
     // MARK: - Game Properties
     private var currentLevel = 1
     private var score = 0
@@ -67,7 +72,21 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     ]
     
     // Test function to verify colors
-    private func testColors() {
+    // MARK: - Layout System
+    
+    private func setupLayoutSystem(view: SKView) {
+        // Get safe area insets from the view controller
+        if let viewController = view.window?.rootViewController {
+            safeAreaInsets = viewController.view.safeAreaInsets
+        }
+        
+        screenBounds = view.bounds
+        layoutGuide = LayoutGuide(sceneSize: self.size, safeAreaInsets: safeAreaInsets)
+        
+        print("Layout setup - Scene size: \(self.size), Safe area: \(safeAreaInsets)")
+    }
+    
+    private func testColors() {"
         print("Testing color definitions:")
         for (index, color) in colors.enumerated() {
             let name = colorName(for: color)
@@ -107,6 +126,9 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         super.didMove(to: view)
         
         print("didMove(to view:) called with scene size: \(self.size), view size: \(view.bounds.size)")
+        
+        // Setup layout system
+        setupLayoutSystem(view: view)
         
         // Only setup once to avoid duplicate initialization
         if critterNode == nil {
@@ -205,9 +227,9 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     private func setupUI() {
         print("Setting up UI with scene size: \(self.size)")
         
-        // Safety check: ensure scene size is valid
-        guard self.size.width > 0 && self.size.height > 0 else {
-            print("Warning: Scene size is invalid, delaying UI setup")
+        // Safety check: ensure scene size is valid and layout guide is initialized
+        guard self.size.width > 0 && self.size.height > 0, layoutGuide != nil else {
+            print("Warning: Scene size is invalid or layout guide not initialized, delaying UI setup")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.setupUI()
             }
@@ -219,18 +241,18 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         // Score label
         scoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         scoreLabel.text = "Score: \(score)"
-        scoreLabel.fontSize = 28
+        scoreLabel.fontSize = layoutGuide.scaledFont(28)
         scoreLabel.fontColor = .darkGray
-        scoreLabel.position = CGPoint(x: 120, y: self.size.height - 60)
+        scoreLabel.position = layoutGuide.topLeft(offset: CGPoint(x: 120, y: -40))
         scoreLabel.zPosition = 10
         addChild(scoreLabel)
         
         // Level label
         levelLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         levelLabel.text = "Level \(currentLevel)"
-        levelLabel.fontSize = 24
+        levelLabel.fontSize = layoutGuide.scaledFont(24)
         levelLabel.fontColor = .darkGray
-        levelLabel.position = CGPoint(x: self.size.width - 120, y: self.size.height - 60)
+        levelLabel.position = layoutGuide.topRight(offset: CGPoint(x: -120, y: -40))
         levelLabel.zPosition = 10
         addChild(levelLabel)
         
@@ -238,8 +260,8 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         setupGamificationUI()
         
         // Collection button (gallery)
-        let collectionButton = SKSpriteNode.roundedRect(color: .systemPurple, size: CGSize(width: 50, height: 50), cornerRadius: 25)
-        collectionButton.position = CGPoint(x: 50, y: self.size.height - 40)
+        let collectionButton = SKSpriteNode.roundedRect(color: .systemPurple, size: layoutGuide.scaledSize(CGSize(width: 50, height: 50)), cornerRadius: 25)
+        collectionButton.position = layoutGuide.topLeft(offset: CGPoint(x: 50, y: -20))
         collectionButton.zPosition = 15
         collectionButton.name = "collectionButton"
         
@@ -252,8 +274,8 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         addChild(collectionButton)
         
         // Pause button
-        pauseButton = SKSpriteNode.roundedRect(color: .systemBlue, size: CGSize(width: 50, height: 50), cornerRadius: 25)
-        pauseButton.position = CGPoint(x: self.size.width - 40, y: self.size.height - 40)
+        pauseButton = SKSpriteNode.roundedRect(color: .systemBlue, size: layoutGuide.scaledSize(CGSize(width: 50, height: 50)), cornerRadius: 25)
+        pauseButton.position = layoutGuide.topRight(offset: CGPoint(x: -40, y: -20))
         pauseButton.zPosition = 15
         pauseButton.name = "pauseButton"
         
@@ -281,7 +303,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         streakLabel.text = "🔥\(settings.currentStreak)"
         streakLabel.fontSize = 20
         streakLabel.fontColor = .orange
-        streakLabel.position = CGPoint(x: 80, y: self.size.height - 100)
+        streakLabel.position = layoutGuide.topLeft(offset: CGPoint(x: 80, y: -80))
         streakLabel.zPosition = 10
         addChild(streakLabel)
         
@@ -290,7 +312,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         multiplierLabel.text = "x\(String(format: "%.1f", settings.streakMultiplier))"
         multiplierLabel.fontSize = 18
         multiplierLabel.fontColor = .systemPurple
-        multiplierLabel.position = CGPoint(x: 160, y: self.size.height - 100)
+        multiplierLabel.position = layoutGuide.topLeft(offset: CGPoint(x: 160, y: -80))
         multiplierLabel.zPosition = 10
         addChild(multiplierLabel)
         
@@ -299,7 +321,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         coinsLabel.text = "🪙\(settings.coins)"
         coinsLabel.fontSize = 18
         coinsLabel.fontColor = .systemYellow
-        coinsLabel.position = CGPoint(x: 80, y: self.size.height - 130)
+        coinsLabel.position = layoutGuide.topLeft(offset: CGPoint(x: 80, y: -110))
         coinsLabel.zPosition = 10
         addChild(coinsLabel)
         
@@ -308,7 +330,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         gemsLabel.text = "💎\(settings.gems)"
         gemsLabel.fontSize = 18
         gemsLabel.fontColor = .systemBlue
-        gemsLabel.position = CGPoint(x: 160, y: self.size.height - 130)
+        gemsLabel.position = layoutGuide.topLeft(offset: CGPoint(x: 160, y: -110))
         gemsLabel.zPosition = 10
         addChild(gemsLabel)
         
@@ -317,7 +339,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         playerLevelLabel.text = "⭐Lv.\(settings.playerLevel)"
         playerLevelLabel.fontSize = 18
         playerLevelLabel.fontColor = .systemGreen
-        playerLevelLabel.position = CGPoint(x: self.size.width - 80, y: self.size.height - 100)
+        playerLevelLabel.position = layoutGuide.topRight(offset: CGPoint(x: -80, y: -80))
         playerLevelLabel.zPosition = 10
         addChild(playerLevelLabel)
         
@@ -328,7 +350,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         xpLabel.text = "XP: \(currentXP)/\(requiredXP)"
         xpLabel.fontSize = 14
         xpLabel.fontColor = .systemGray
-        xpLabel.position = CGPoint(x: self.size.width - 80, y: self.size.height - 120)
+        xpLabel.position = layoutGuide.topRight(offset: CGPoint(x: -80, y: -100))
         xpLabel.zPosition = 10
         addChild(xpLabel)
         
@@ -337,7 +359,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         comboLabel.text = "⚡ 0x"
         comboLabel.fontSize = 20
         comboLabel.fontColor = .systemOrange
-        comboLabel.position = CGPoint(x: 240, y: self.size.height - 100)
+        comboLabel.position = layoutGuide.topCenter(offset: CGPoint(x: 0, y: -80))
         comboLabel.zPosition = 10
         comboLabel.alpha = 0 // Hidden initially
         addChild(comboLabel)
@@ -356,13 +378,13 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         pauseMenu.isHidden = true
         
         // Background overlay
-        let overlay = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.7), size: self.size)
-        overlay.position = CGPoint(x: self.size.width/2, y: self.size.height/2)
+        let overlay = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.7), size: layoutGuide.sceneSize)
+        overlay.position = layoutGuide.center()
         pauseMenu.addChild(overlay)
         
         // Menu container
         let menuContainer = SKSpriteNode.roundedRect(color: .white, size: CGSize(width: 320, height: 420), cornerRadius: 25)
-        menuContainer.position = CGPoint(x: self.size.width/2, y: self.size.height/2)
+        menuContainer.position = layoutGuide.center()
         pauseMenu.addChild(menuContainer)
         
         // Title
@@ -481,11 +503,11 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     }
     
     private func createCritter(named critterName: String, targetColor: UIColor) {
-        let critterSize = CGSize(width: 100, height: 100)
+        let critterSize = layoutGuide.scaledSize(CGSize(width: 100, height: 100))
         
         // Create a container for both versions of the critter
         critterNode = SKNode()
-        critterNode.position = CGPoint(x: self.size.width/2, y: self.size.height * 0.65)
+        critterNode.position = layoutGuide.upperCenter(offset: CGPoint(x: 0, y: 50))
         critterNode.zPosition = 5
         critterNode.name = "critter"
         
@@ -572,10 +594,10 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     }
     
     private func createColorBlobs(count: Int, targetColor: UIColor) {
-        let blobSize = CGSize(width: 70, height: 70)
-        let spacing: CGFloat = 90
+        let blobSize = layoutGuide.scaledSize(CGSize(width: 70, height: 70))
+        let spacing: CGFloat = min(layoutGuide.scaledFont(90), (layoutGuide.sceneSize.width - 60) / CGFloat(count))
         let totalWidth = CGFloat(count) * spacing
-        let startX = (self.size.width - totalWidth) / 2 + spacing / 2
+        let startX = (layoutGuide.sceneSize.width - totalWidth) / 2 + spacing / 2
         
         print("Creating \(count) color blobs for target color: \(colorName(for: targetColor))")
         
@@ -606,7 +628,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
             
             // Create rounded blob with shadow
             let roundedBlob = SKSpriteNode.roundedRect(color: currentColor, size: blobSize, cornerRadius: 35)
-            roundedBlob.position = CGPoint(x: startX + CGFloat(i) * spacing, y: 120)
+            roundedBlob.position = CGPoint(x: startX + CGFloat(i) * spacing, y: layoutGuide.lowerCenter().y)
             roundedBlob.zPosition = 5
             roundedBlob.name = "colorBlob_\(i)"
             
@@ -1226,7 +1248,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         message.text = text
         message.fontSize = 28
         message.fontColor = color
-        message.position = CGPoint(x: self.size.width/2, y: self.size.height * 0.8)
+        message.position = layoutGuide.topCenter(offset: CGPoint(x: 0, y: -150))
         message.zPosition = 20
         message.alpha = 0
         
@@ -1466,7 +1488,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         
         // Background
         let background = SKSpriteNode.roundedRect(color: .systemYellow, size: CGSize(width: 280, height: 100), cornerRadius: 20)
-        background.position = CGPoint(x: size.width/2, y: size.height + 50)
+        background.position = CGPoint(x: layoutGuide.sceneSize.width/2, y: layoutGuide.sceneSize.height + 50)
         popup.addChild(background)
         
         // Achievement text
@@ -1487,9 +1509,9 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         addChild(popup)
         
         // Animate in and out
-        let slideIn = SKAction.moveTo(y: size.height - 80, duration: 0.5)
+        let slideIn = SKAction.moveTo(y: layoutGuide.safeTop - 80, duration: 0.5)
         let wait = SKAction.wait(forDuration: 3.0)
-        let slideOut = SKAction.moveTo(y: size.height + 50, duration: 0.5)
+        let slideOut = SKAction.moveTo(y: layoutGuide.sceneSize.height + 50, duration: 0.5)
         let remove = SKAction.removeFromParent()
         
         popup.run(SKAction.sequence([slideIn, wait, slideOut, remove]))
@@ -1764,5 +1786,91 @@ extension GameScene: PowerUpUIDelegate {
             critterNode.addChild(sparkle)
             sparkle.run(sequence)
         }
+    }
+}
+
+// MARK: - Layout Helper Class
+class LayoutGuide {
+    let sceneSize: CGSize
+    let safeAreaInsets: UIEdgeInsets
+    
+    // Layout anchors
+    let safeTop: CGFloat
+    let safeBottom: CGFloat
+    let safeLeft: CGFloat
+    let safeRight: CGFloat
+    
+    // Screen zones
+    let topZone: CGFloat
+    let upperZone: CGFloat
+    let centerZone: CGFloat
+    let lowerZone: CGFloat
+    let bottomZone: CGFloat
+    
+    // Dynamic sizing
+    let scaleFactor: CGFloat
+    
+    init(sceneSize: CGSize, safeAreaInsets: UIEdgeInsets) {
+        self.sceneSize = sceneSize
+        self.safeAreaInsets = safeAreaInsets
+        
+        // Calculate safe area bounds
+        self.safeTop = sceneSize.height - safeAreaInsets.top
+        self.safeBottom = safeAreaInsets.bottom
+        self.safeLeft = safeAreaInsets.left
+        self.safeRight = sceneSize.width - safeAreaInsets.right
+        
+        // Define screen zones as percentages of available height
+        let availableHeight = safeTop - safeBottom
+        self.topZone = safeTop - (availableHeight * 0.05)
+        self.upperZone = safeTop - (availableHeight * 0.25)
+        self.centerZone = safeBottom + (availableHeight * 0.5)
+        self.lowerZone = safeBottom + (availableHeight * 0.25)
+        self.bottomZone = safeBottom + (availableHeight * 0.05)
+        
+        // Calculate scale factor based on screen size (iPhone 14 as baseline: 390x844)
+        let baseWidth: CGFloat = 390
+        let baseHeight: CGFloat = 844
+        let widthRatio = sceneSize.width / baseWidth
+        let heightRatio = sceneSize.height / baseHeight
+        self.scaleFactor = min(widthRatio, heightRatio)
+    }
+    
+    // Helper methods for common positioning
+    func topLeft(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: safeLeft + offset.x, y: safeTop + offset.y)
+    }
+    
+    func topRight(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: safeRight + offset.x, y: safeTop + offset.y)
+    }
+    
+    func topCenter(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: safeTop + offset.y)
+    }
+    
+    func center(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: centerZone + offset.y)
+    }
+    
+    func bottomCenter(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: bottomZone + offset.y)
+    }
+    
+    func upperCenter(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: upperZone + offset.y)
+    }
+    
+    func lowerCenter(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: lowerZone + offset.y)
+    }
+    
+    // Helper methods for responsive sizing
+    func scaledFont(_ baseSize: CGFloat) -> CGFloat {
+        return baseSize * scaleFactor
+    }
+    
+    func scaledSize(_ baseSize: CGSize) -> CGSize {
+        return CGSize(width: baseSize.width * scaleFactor, height: baseSize.height * scaleFactor)
     }
 }
