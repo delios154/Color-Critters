@@ -9,7 +9,93 @@ import SpriteKit
 import GameplayKit
 import AVFoundation
 
-class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDelegate {
+// MARK: - Layout Helper Class
+class LayoutGuide {
+    let sceneSize: CGSize
+    let safeAreaInsets: UIEdgeInsets
+    
+    // Layout anchors
+    let safeTop: CGFloat
+    let safeBottom: CGFloat
+    let safeLeft: CGFloat
+    let safeRight: CGFloat
+    
+    // Screen zones
+    let topZone: CGFloat
+    let upperZone: CGFloat
+    let centerZone: CGFloat
+    let lowerZone: CGFloat
+    let bottomZone: CGFloat
+    
+    // Dynamic sizing
+    let scaleFactor: CGFloat
+    
+    init(sceneSize: CGSize, safeAreaInsets: UIEdgeInsets) {
+        self.sceneSize = sceneSize
+        self.safeAreaInsets = safeAreaInsets
+        
+        // Calculate safe area bounds
+        self.safeTop = sceneSize.height - safeAreaInsets.top
+        self.safeBottom = safeAreaInsets.bottom
+        self.safeLeft = safeAreaInsets.left
+        self.safeRight = sceneSize.width - safeAreaInsets.right
+        
+        // Define screen zones as percentages of available height
+        let availableHeight = safeTop - safeBottom
+        self.topZone = safeTop - (availableHeight * 0.05)
+        self.upperZone = safeTop - (availableHeight * 0.25)
+        self.centerZone = safeBottom + (availableHeight * 0.5)
+        self.lowerZone = safeBottom + (availableHeight * 0.25)
+        self.bottomZone = safeBottom + (availableHeight * 0.05)
+        
+        // Calculate scale factor based on screen size (iPhone 14 as baseline: 390x844)
+        let baseWidth: CGFloat = 390
+        let baseHeight: CGFloat = 844
+        let widthRatio = sceneSize.width / baseWidth
+        let heightRatio = sceneSize.height / baseHeight
+        self.scaleFactor = min(widthRatio, heightRatio)
+    }
+    
+    // Helper methods for common positioning
+    func topLeft(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: safeLeft + offset.x, y: safeTop + offset.y)
+    }
+    
+    func topRight(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: safeRight + offset.x, y: safeTop + offset.y)
+    }
+    
+    func topCenter(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: safeTop + offset.y)
+    }
+    
+    func center(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: centerZone + offset.y)
+    }
+    
+    func bottomCenter(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: bottomZone + offset.y)
+    }
+    
+    func upperCenter(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: upperZone + offset.y)
+    }
+    
+    func lowerCenter(offset: CGPoint = .zero) -> CGPoint {
+        return CGPoint(x: sceneSize.width/2 + offset.x, y: lowerZone + offset.y)
+    }
+    
+    // Helper methods for responsive sizing
+    func scaledFont(_ baseSize: CGFloat) -> CGFloat {
+        return baseSize * scaleFactor
+    }
+    
+    func scaledSize(_ baseSize: CGSize) -> CGSize {
+        return CGSize(width: baseSize.width * scaleFactor, height: baseSize.height * scaleFactor)
+    }
+}
+
+class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDelegate, TutorialOverlayDelegate, EnhancedStatsScreenDelegate, PowerUpUIDelegate {
     
     // MARK: - Layout Properties
     private var safeAreaInsets: UIEdgeInsets = .zero
@@ -72,6 +158,26 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     ]
     
     // Test function to verify colors
+    private func colorName(for color: UIColor) -> String {
+        switch color {
+        case .red: return "Red"
+        case .blue: return "Blue"
+        case .green: return "Green"
+        case .yellow: return "Yellow"
+        case .orange: return "Orange"
+        case .purple: return "Purple"
+        case .systemPink: return "Pink"
+        case .brown: return "Brown"
+        case .cyan: return "Cyan"
+        case .magenta: return "Magenta"
+        default: return "Unknown"
+        }
+    }
+    
+    private func isSameColor(_ color1: UIColor, _ color2: UIColor) -> Bool {
+        return color1 == color2
+    }
+    
     // MARK: - Layout System
     
     private func setupLayoutSystem(view: SKView) {
@@ -86,7 +192,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         print("Layout setup - Scene size: \(self.size), Safe area: \(safeAreaInsets)")
     }
     
-    private func testColors() {"
+    private func testColors() {
         print("Testing color definitions:")
         for (index, color) in colors.enumerated() {
             let name = colorName(for: color)
@@ -383,6 +489,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         let overlay = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.7), size: layoutGuide.sceneSize)
         overlay.position = layoutGuide.center()
         pauseMenu.addChild(overlay)
+    }
     
     private func createMenuButton(text: String, color: UIColor, position: CGPoint) -> SKSpriteNode {
         let button = SKSpriteNode.roundedRect(color: color, size: CGSize(width: 220, height: 55), cornerRadius: 28)
@@ -476,7 +583,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         if let animalImage = AnimalImageGenerator.generateAnimalImage(for: critterName, size: critterSize) {
             
             // Create the colorless (gray) version - what the animal currently looks like
-            if let grayImage = animalImage.tinted(with: .lightGray) {
+            if let grayImage = animalImage.tinted(with: UIColor.lightGray) {
                 let grayTexture = SKTexture(image: grayImage)
                 let graySprite = SKSpriteNode(texture: grayTexture)
                 graySprite.position = CGPoint(x: -60, y: 0)
@@ -513,7 +620,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
             
         } else {
             // Fallback to colored circles if image generation fails
-            let grayCircle = SKSpriteNode.roundedRect(color: .lightGray, size: critterSize, cornerRadius: 50)
+            let grayCircle = SKSpriteNode.roundedRect(color: UIColor.lightGray, size: critterSize, cornerRadius: 50)
             grayCircle.position = CGPoint(x: -60, y: 0)
             critterNode.addChild(grayCircle)
             
@@ -629,32 +736,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         print("Target color \(colorName(for: targetColor)) is included: \(hasTargetColor)")
     }
     
-    private func colorName(for color: UIColor) -> String {
-        // Extract RGB components for more accurate color identification
-        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-        color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        
-        // Round to 2 decimal places for comparison
-        let r = round(red * 100) / 100
-        let g = round(green * 100) / 100
-        let b = round(blue * 100) / 100
-        
-        print("Color components - R: \(r), G: \(g), B: \(b)")
-        
-        // Compare with known color values
-        if r == 1.0 && g == 0.0 && b == 0.0 { return "Red" }
-        if r == 0.0 && g == 0.0 && b == 1.0 { return "Blue" }
-        if r == 0.0 && g == 1.0 && b == 0.0 { return "Green" }
-        if r == 1.0 && g == 1.0 && b == 0.0 { return "Yellow" }
-        if r == 1.0 && g == 0.5 && b == 0.0 { return "Orange" }
-        if r == 0.5 && g == 0.0 && b == 0.5 { return "Purple" }
-        if r == 1.0 && g == 0.18 && b == 0.33 { return "Pink" }
-        if r == 0.6 && g == 0.4 && b == 0.2 { return "Brown" }
-        if r == 0.0 && g == 1.0 && b == 1.0 { return "Cyan" }
-        if r == 1.0 && g == 0.0 && b == 1.0 { return "Magenta" }
-        
-        return "Unknown Color (R:\(r), G:\(g), B:\(b))"
-    }
+
     
     // MARK: - Tutorial and Stats Methods
     private func startTutorialIfNeeded() {
@@ -973,34 +1055,7 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         }
     }
     
-    private func isSameColor(_ color1: UIColor, _ color2: UIColor) -> Bool {
-        // Extract RGB components for comparison
-        var red1: CGFloat = 0, green1: CGFloat = 0, blue1: CGFloat = 0, alpha1: CGFloat = 0
-        var red2: CGFloat = 0, green2: CGFloat = 0, blue2: CGFloat = 0, alpha2: CGFloat = 0
-        
-        color1.getRed(&red1, green: &green1, blue: &blue1, alpha: &alpha1)
-        color2.getRed(&red2, green: &green2, blue: &blue2, alpha: &alpha2)
-        
-        // Round to 2 decimal places for more consistent comparison
-        let r1 = round(red1 * 100) / 100
-        let g1 = round(green1 * 100) / 100
-        let b1 = round(blue1 * 100) / 100
-        
-        let r2 = round(red2 * 100) / 100
-        let g2 = round(green2 * 100) / 100
-        let b2 = round(blue2 * 100) / 100
-        
-        // Compare with some tolerance for floating point precision
-        let tolerance: CGFloat = 0.05
-        let redMatch = abs(r1 - r2) < tolerance
-        let greenMatch = abs(g1 - g2) < tolerance
-        let blueMatch = abs(b1 - b2) < tolerance
-        
-        print("Color comparison - Color1: R:\(r1), G:\(g1), B:\(b1) vs Color2: R:\(r2), G:\(g2), B:\(b2)")
-        print("  Red match: \(redMatch), Green match: \(greenMatch), Blue match: \(blueMatch)")
-        
-        return redMatch && greenMatch && blueMatch
-    }
+
     
     private func handleCorrectMatch() {
         let settings = GameSettings.shared
@@ -1570,18 +1625,14 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
             SocialSharingManager.shared.shareColoredAnimal(currentAnimalName, color: targetColor, level: currentLevel, from: viewController)
         }
     }
-}
-
-// MARK: - AnimalGalleryDelegate
-extension GameScene {
+    
+    // MARK: - AnimalGalleryDelegate
     func galleryDidClose() {
         animalGallery?.removeFromParent()
         animalGallery = nil
     }
-}
-
-// MARK: - MiniGameDelegate
-extension GameScene {
+    
+    // MARK: - MiniGameDelegate
     func miniGameCompleted(score: Int, coins: Int) {
         // Award bonus rewards
         GameSettings.shared.coins += coins
@@ -1604,10 +1655,8 @@ extension GameScene {
         // Just continue to next level
         startNewLevel()
     }
-}
-
-// MARK: - TutorialOverlayDelegate
-extension GameScene: TutorialOverlayDelegate {
+    
+    // MARK: - TutorialOverlayDelegate
     func tutorialDidComplete() {
         print("Tutorial delegate called, removing tutorial overlay")
         tutorialOverlay?.removeFromParent()
@@ -1619,18 +1668,14 @@ extension GameScene: TutorialOverlayDelegate {
         GameSettings.shared.hasSeenTutorial = true
         print("Tutorial completed and settings updated")
     }
-}
-
-// MARK: - EnhancedStatsScreenDelegate
-extension GameScene: EnhancedStatsScreenDelegate {
+    
+    // MARK: - EnhancedStatsScreenDelegate
     func statsScreenDidClose() {
         enhancedStatsScreen?.removeFromParent()
         enhancedStatsScreen = nil
     }
-}
-
-// MARK: - PowerUpUIDelegate
-extension GameScene: PowerUpUIDelegate {
+    
+    // MARK: - PowerUpUIDelegate
     func powerUpActivated(_ type: PowerUpType) {
         // Show activation feedback
         let message = "\(type.name) Activated! \(type.icon)"
@@ -1667,17 +1712,73 @@ extension GameScene: PowerUpUIDelegate {
                 glow.alpha = 0.5
                 glow.position = blob.position
                 glow.zPosition = blob.zPosition - 1
-                addChild(glow)
-                
-                let glowFade = SKAction.sequence([
-                    SKAction.fadeOut(withDuration: 2.0),
-                    SKAction.removeFromParent()
-                ])
-                glow.run(glowFade)
-                
-                break
-            }
+    func galleryDidClose() {
+        animalGallery?.removeFromParent()
+        animalGallery = nil
+    }
+    }
+    
+    // MARK: - MiniGameDelegate
+    func miniGameCompleted(score: Int, coins: Int) {
+        // Award bonus rewards
+        GameSettings.shared.coins += coins
+        GameSettings.shared.updateScore(score)
+        updateGamificationUI()
+        
+        showFloatingText("Mini-Game Complete! +\(coins) coins!", 
+                        at: CGPoint(x: size.width/2, y: size.height/2), 
+                        color: .systemGreen)
+        
+        HapticManager.shared.levelComplete()
+        
+        // Continue to next level
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.startNewLevel()
         }
+    }
+    
+    func miniGameSkipped() {
+        // Just continue to next level
+        startNewLevel()
+    }
+    
+    // MARK: - TutorialOverlayDelegate
+    func tutorialDidComplete() {
+        print("Tutorial delegate called, removing tutorial overlay")
+        tutorialOverlay?.removeFromParent()
+        tutorialOverlay = nil
+        
+        // Remove skip button
+        childNode(withName: "skipTutorialButton")?.removeFromParent()
+        
+        GameSettings.shared.hasSeenTutorial = true
+        print("Tutorial completed and settings updated")
+    }
+    
+    // MARK: - EnhancedStatsScreenDelegate
+    func statsScreenDidClose() {
+        enhancedStatsScreen?.removeFromParent()
+        enhancedStatsScreen = nil
+    }
+    
+    // MARK: - PowerUpUIDelegate
+    func powerUpActivated(_ type: PowerUpType) {
+        // Show activation feedback
+        let message = "\(type.name) Activated! \(type.icon)"
+        showFloatingText(message, at: CGPoint(x: size.width/2, y: size.height - 300), color: .systemPurple)
+        
+        // Play power-up sound
+        SoundManager.shared.playCorrectSound() // Could add specific power-up sound
+        
+        // Show color hint if that power-up was activated
+        if type == .colorHint {
+            showColorHint()
+        }
+    }
+    
+    func powerUpShopOpened() {
+        // Could implement power-up shop here
+        showFloatingText("Power-up Shop Coming Soon!", at: CGPoint(x: size.width/2, y: size.height/2), color: .systemBlue)
     }
     
     private func transformCritterToColored(targetColor: UIColor) {
@@ -1747,91 +1848,5 @@ extension GameScene: PowerUpUIDelegate {
             critterNode.addChild(sparkle)
             sparkle.run(sequence)
         }
-    }
-}
-
-// MARK: - Layout Helper Class
-class LayoutGuide {
-    let sceneSize: CGSize
-    let safeAreaInsets: UIEdgeInsets
-    
-    // Layout anchors
-    let safeTop: CGFloat
-    let safeBottom: CGFloat
-    let safeLeft: CGFloat
-    let safeRight: CGFloat
-    
-    // Screen zones
-    let topZone: CGFloat
-    let upperZone: CGFloat
-    let centerZone: CGFloat
-    let lowerZone: CGFloat
-    let bottomZone: CGFloat
-    
-    // Dynamic sizing
-    let scaleFactor: CGFloat
-    
-    init(sceneSize: CGSize, safeAreaInsets: UIEdgeInsets) {
-        self.sceneSize = sceneSize
-        self.safeAreaInsets = safeAreaInsets
-        
-        // Calculate safe area bounds
-        self.safeTop = sceneSize.height - safeAreaInsets.top
-        self.safeBottom = safeAreaInsets.bottom
-        self.safeLeft = safeAreaInsets.left
-        self.safeRight = sceneSize.width - safeAreaInsets.right
-        
-        // Define screen zones as percentages of available height
-        let availableHeight = safeTop - safeBottom
-        self.topZone = safeTop - (availableHeight * 0.05)
-        self.upperZone = safeTop - (availableHeight * 0.25)
-        self.centerZone = safeBottom + (availableHeight * 0.5)
-        self.lowerZone = safeBottom + (availableHeight * 0.25)
-        self.bottomZone = safeBottom + (availableHeight * 0.05)
-        
-        // Calculate scale factor based on screen size (iPhone 14 as baseline: 390x844)
-        let baseWidth: CGFloat = 390
-        let baseHeight: CGFloat = 844
-        let widthRatio = sceneSize.width / baseWidth
-        let heightRatio = sceneSize.height / baseHeight
-        self.scaleFactor = min(widthRatio, heightRatio)
-    }
-    
-    // Helper methods for common positioning
-    func topLeft(offset: CGPoint = .zero) -> CGPoint {
-        return CGPoint(x: safeLeft + offset.x, y: safeTop + offset.y)
-    }
-    
-    func topRight(offset: CGPoint = .zero) -> CGPoint {
-        return CGPoint(x: safeRight + offset.x, y: safeTop + offset.y)
-    }
-    
-    func topCenter(offset: CGPoint = .zero) -> CGPoint {
-        return CGPoint(x: sceneSize.width/2 + offset.x, y: safeTop + offset.y)
-    }
-    
-    func center(offset: CGPoint = .zero) -> CGPoint {
-        return CGPoint(x: sceneSize.width/2 + offset.x, y: centerZone + offset.y)
-    }
-    
-    func bottomCenter(offset: CGPoint = .zero) -> CGPoint {
-        return CGPoint(x: sceneSize.width/2 + offset.x, y: bottomZone + offset.y)
-    }
-    
-    func upperCenter(offset: CGPoint = .zero) -> CGPoint {
-        return CGPoint(x: sceneSize.width/2 + offset.x, y: upperZone + offset.y)
-    }
-    
-    func lowerCenter(offset: CGPoint = .zero) -> CGPoint {
-        return CGPoint(x: sceneSize.width/2 + offset.x, y: lowerZone + offset.y)
-    }
-    
-    // Helper methods for responsive sizing
-    func scaledFont(_ baseSize: CGFloat) -> CGFloat {
-        return baseSize * scaleFactor
-    }
-    
-    func scaledSize(_ baseSize: CGSize) -> CGSize {
-        return CGSize(width: baseSize.width * scaleFactor, height: baseSize.height * scaleFactor)
     }
 }
