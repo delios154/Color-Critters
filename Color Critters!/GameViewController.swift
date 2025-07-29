@@ -16,12 +16,12 @@ class GameViewController: UIViewController {
         
         // Configure the view
         if let view = self.view as! SKView? {
-            // Use a standard size for consistent gameplay across devices
-            let sceneSize = CGSize(width: 390, height: 844) // iPhone 14 size as base
-            let scene = GameScene(size: sceneSize)
+            // Use the actual device screen size for optimal compatibility
+            let screenSize = UIScreen.main.bounds.size
+            let scene = GameScene(size: screenSize)
             
-            // Set the scale mode to scale to fit the window
-            scene.scaleMode = .aspectFit
+            // Set the scale mode to fill the entire screen
+            scene.scaleMode = .aspectFill
             
             // Present the scene
             view.presentScene(scene)
