@@ -80,6 +80,7 @@ class OnboardingManager: SKNode {
         self.gameScene = scene
         self.completion = completion
         self.zPosition = 1000
+        self.isUserInteractionEnabled = true
         setupOnboarding()
     }
     
@@ -92,9 +93,11 @@ class OnboardingManager: SKNode {
     private func setupOnboarding() {
         guard let scene = gameScene else { return }
         
-        // Semi-transparent background
+        // Semi-transparent background that captures all touches
         overlayBackground = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.7), size: scene.size)
         overlayBackground.position = CGPoint(x: scene.size.width/2, y: scene.size.height/2)
+        overlayBackground.name = "onboardingBackground"
+        overlayBackground.isUserInteractionEnabled = true
         addChild(overlayBackground)
         
         // Content container
@@ -189,21 +192,23 @@ class OnboardingManager: SKNode {
     private func createNavigation() {
         guard let scene = gameScene else { return }
         
-        // Next button
+        // Next button - positioned at bottom right, ensure it's visible
         nextButton = createButton(text: "Next", color: .systemGreen)
-        nextButton.position = CGPoint(x: 100, y: -scene.size.height/2 + 100)
+        nextButton.position = CGPoint(x: scene.size.width/2 - 100, y: -scene.size.height/2 + 100)
         nextButton.name = "nextButton"
+        nextButton.zPosition = 1001 // Ensure it's above everything else
         addChild(nextButton)
         
-        // Skip button
+        // Skip button - positioned at bottom left, ensure it's visible
         skipButton = createButton(text: "Skip", color: .systemGray)
-        skipButton.position = CGPoint(x: -100, y: -scene.size.height/2 + 100)
+        skipButton.position = CGPoint(x: -scene.size.width/2 + 100, y: -scene.size.height/2 + 100)
         skipButton.name = "skipButton"
+        skipButton.zPosition = 1001 // Ensure it's above everything else
         addChild(skipButton)
     }
     
     private func createButton(text: String, color: UIColor) -> SKSpriteNode {
-        let button = SKSpriteNode(color: color, size: CGSize(width: 120, height: 50))
+        let button = SKSpriteNode(color: color, size: CGSize(width: 140, height: 60)) // Larger buttons
         button.name = text.lowercased() + "Button"
         
         let label = SKLabelNode(text: text)
@@ -430,13 +435,37 @@ class OnboardingManager: SKNode {
         let location = touch.location(in: self)
         let nodesAtPoint = nodes(at: location)
         
+        print("OnboardingManager touch at: \(location)")
+        print("Current step: \(currentStep)")
+        print("Nodes at point: \(nodesAtPoint.map { $0.name ?? "unnamed" })")
+        
+        // Check for specific button taps first
         for node in nodesAtPoint {
             if node.name == "nextButton" {
+                print("Next button tapped!")
                 handleNext()
+                return
             } else if node.name == "skipButton" {
+                print("Skip button tapped!")
                 handleSkip()
+                return
             }
         }
+        
+        // Also check direct button hits
+        if let nextBtn = nextButton, nextBtn.contains(location) {
+            print("Direct hit on next button!")
+            handleNext()
+            return
+        } else if let skipBtn = skipButton, skipBtn.contains(location) {
+            print("Direct hit on skip button!")  
+            handleSkip()
+            return
+        }
+        
+        // If no button was tapped, treat any screen tap as "next" to advance/dismiss
+        print("Screen tapped anywhere - advancing to next step")
+        handleNext()
     }
     
     private func handleNext() {

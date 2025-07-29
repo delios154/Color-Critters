@@ -222,29 +222,35 @@ class FeedbackManager {
         // Fade in overlay
         overlay.run(SKAction.fadeIn(withDuration: 0.3))
         
+        // Position container in the lower third of screen, above color blobs
+        let colorBlobY = scene.size.height * 0.15
+        let containerY = colorBlobY + 80 // Position above the color blobs, not below
+        
         // Create celebration container
         let container = SKNode()
-        container.position = CGPoint(x: scene.size.width/2, y: scene.size.height/2)
+        container.position = CGPoint(x: scene.size.width/2, y: containerY)
         overlay.addChild(container)
         
-        // Add "Level Complete!" text
+        // Add "Level Complete!" text above stars
         let titleLabel = SKLabelNode(text: "Level Complete!")
         titleLabel.fontName = "AvenirNext-Bold"
-        titleLabel.fontSize = AccessibilityManager.shared.getAccessibleFontSize(baseSize: 42)
+        titleLabel.fontSize = AccessibilityManager.shared.getAccessibleFontSize(baseSize: 32) // Smaller font
         titleLabel.fontColor = .systemYellow
-        titleLabel.position = CGPoint(x: 0, y: 100)
+        titleLabel.position = CGPoint(x: 0, y: 80) // Above stars
         container.addChild(titleLabel)
         
-        // Add stars
-        let starSpacing: CGFloat = 80
-        let startX = -CGFloat(stars - 1) * starSpacing / 2
+        // Add stars in center - fixed positioning
+        let starSpacing: CGFloat = 50 // Tighter spacing
+        let starY: CGFloat = 0 // Center vertically in container
         
         for i in 0..<3 {
             let delay = Double(i) * 0.2
             
             scene.run(SKAction.wait(forDuration: delay)) {
                 let star = self.createStar(filled: i < stars)
-                star.position = CGPoint(x: startX + CGFloat(i) * starSpacing, y: 0)
+                // Position stars centered horizontally
+                let starX = CGFloat(i - 1) * starSpacing // -1, 0, 1 pattern
+                star.position = CGPoint(x: starX, y: starY)
                 star.setScale(0)
                 container.addChild(star)
                 
@@ -260,10 +266,10 @@ class FeedbackManager {
             }
         }
         
-        // Add continue button
+        // Add continue button below stars
         scene.run(SKAction.wait(forDuration: 1.5)) {
             let continueButton = self.createContinueButton()
-            continueButton.position = CGPoint(x: 0, y: -150)
+            continueButton.position = CGPoint(x: 0, y: -60) // Below stars with more space
             continueButton.alpha = 0
             container.addChild(continueButton)
             

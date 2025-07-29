@@ -215,35 +215,36 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         }
         
         let settings = GameSettings.shared
-        let safeAreaTop = self.size.height - 50 // Safe area adjustment
+        let safeAreaTop = self.size.height - 80 // Increased safe area adjustment
+        let safeAreaSide = 30 // Side margins
         
-        // Score label - positioned in top left
+        // Score label - positioned in top left with better spacing
         scoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         scoreLabel.text = "Score: \(score)"
-        scoreLabel.fontSize = min(28, self.size.width / 15) // Responsive font size
+        scoreLabel.fontSize = min(24, self.size.width / 18) // Reduced font size
         scoreLabel.fontColor = .darkGray
-        scoreLabel.position = CGPoint(x: self.size.width * 0.25, y: safeAreaTop)
-        scoreLabel.horizontalAlignmentMode = .center
+        scoreLabel.position = CGPoint(x: CGFloat(safeAreaSide + 80), y: safeAreaTop)
+        scoreLabel.horizontalAlignmentMode = .left
         scoreLabel.zPosition = 10
         addChild(scoreLabel)
         
-        // Level label - positioned in top right
+        // Level label - positioned in top right with better spacing
         levelLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         levelLabel.text = "Level \(currentLevel)"
-        levelLabel.fontSize = min(24, self.size.width / 18)
+        levelLabel.fontSize = min(20, self.size.width / 20)
         levelLabel.fontColor = .darkGray
-        levelLabel.position = CGPoint(x: self.size.width * 0.75, y: safeAreaTop)
-        levelLabel.horizontalAlignmentMode = .center
+        levelLabel.position = CGPoint(x: self.size.width - CGFloat(safeAreaSide + 80), y: safeAreaTop)
+        levelLabel.horizontalAlignmentMode = .right
         levelLabel.zPosition = 10
         addChild(levelLabel)
         
         // Gamification UI - Top HUD
         setupGamificationUI()
         
-        // Collection button (gallery) - positioned in top left corner
-        let buttonSize = min(50, self.size.width * 0.12)
+        // Collection button (gallery) - positioned in top left corner with proper spacing
+        let buttonSize = min(45, self.size.width * 0.11)
         let collectionButton = SKSpriteNode.roundedRect(color: .systemPurple, size: CGSize(width: buttonSize, height: buttonSize), cornerRadius: buttonSize/2)
-        collectionButton.position = CGPoint(x: buttonSize/2 + 20, y: safeAreaTop)
+        collectionButton.position = CGPoint(x: CGFloat(safeAreaSide), y: safeAreaTop)
         collectionButton.zPosition = 15
         collectionButton.name = "collectionButton"
         
@@ -256,9 +257,9 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         collectionButton.addChild(collectionLabel)
         addChild(collectionButton)
         
-        // Pause button - positioned in top right corner
+        // Pause button - positioned in top right corner with proper spacing
         pauseButton = SKSpriteNode.roundedRect(color: .systemBlue, size: CGSize(width: buttonSize, height: buttonSize), cornerRadius: buttonSize/2)
-        pauseButton.position = CGPoint(x: self.size.width - buttonSize/2 - 20, y: safeAreaTop)
+        pauseButton.position = CGPoint(x: self.size.width - CGFloat(safeAreaSide), y: safeAreaTop)
         pauseButton.zPosition = 15
         pauseButton.name = "pauseButton"
         
@@ -281,81 +282,88 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     
     private func setupGamificationUI() {
         let settings = GameSettings.shared
-        let fontSize = min(18, self.size.width / 20)
-        let smallFontSize = min(14, self.size.width / 25)
-        let hudY1 = self.size.height - 100
-        let hudY2 = self.size.height - 130
+        let fontSize = min(16, self.size.width / 22)
+        let smallFontSize = min(12, self.size.width / 30)
+        let hudY1 = self.size.height - 120 // More spacing from top
+        let hudY2 = self.size.height - 150 // More spacing between rows
         
-        // Left side - Streak and coins
+        // Reorganize with better spacing - 4 columns instead of cramped layout
+        let col1X = self.size.width * 0.12  // Left
+        let col2X = self.size.width * 0.35  // Center-left 
+        let col3X = self.size.width * 0.65  // Center-right
+        let col4X = self.size.width * 0.88  // Right
+        
+        // Column 1 - Streak
         streakLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         streakLabel.text = "🔥\(settings.currentStreak)"
         streakLabel.fontSize = fontSize
         streakLabel.fontColor = .orange
-        streakLabel.position = CGPoint(x: self.size.width * 0.15, y: hudY1)
+        streakLabel.position = CGPoint(x: col1X, y: hudY1)
         streakLabel.horizontalAlignmentMode = .center
         streakLabel.zPosition = 10
         addChild(streakLabel)
         
-        coinsLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
-        coinsLabel.text = "🪙\(settings.coins)"
-        coinsLabel.fontSize = fontSize
-        coinsLabel.fontColor = .systemYellow
-        coinsLabel.position = CGPoint(x: self.size.width * 0.15, y: hudY2)
-        coinsLabel.horizontalAlignmentMode = .center
-        coinsLabel.zPosition = 10
-        addChild(coinsLabel)
-        
-        // Center - Multiplier and gems
+        // Column 2 - Multiplier
         multiplierLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         multiplierLabel.text = "x\(String(format: "%.1f", settings.streakMultiplier))"
         multiplierLabel.fontSize = fontSize
         multiplierLabel.fontColor = .systemPurple
-        multiplierLabel.position = CGPoint(x: self.size.width * 0.4, y: hudY1)
+        multiplierLabel.position = CGPoint(x: col2X, y: hudY1)
         multiplierLabel.horizontalAlignmentMode = .center
         multiplierLabel.zPosition = 10
         addChild(multiplierLabel)
         
-        gemsLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
-        gemsLabel.text = "💎\(settings.gems)"
-        gemsLabel.fontSize = fontSize
-        gemsLabel.fontColor = .systemBlue
-        gemsLabel.position = CGPoint(x: self.size.width * 0.4, y: hudY2)
-        gemsLabel.horizontalAlignmentMode = .center
-        gemsLabel.zPosition = 10
-        addChild(gemsLabel)
+        // Column 3 - Combo (visible when active)
+        comboLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        comboLabel.text = "⚡ 0x"
+        comboLabel.fontSize = fontSize
+        comboLabel.fontColor = .systemOrange
+        comboLabel.position = CGPoint(x: col3X, y: hudY1)
+        comboLabel.horizontalAlignmentMode = .center
+        comboLabel.zPosition = 10
+        comboLabel.alpha = 0 // Hidden initially
+        addChild(comboLabel)
         
-        // Right side - Player level and combo
+        // Column 4 - Player Level
         playerLevelLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         playerLevelLabel.text = "⭐Lv.\(settings.playerLevel)"
         playerLevelLabel.fontSize = fontSize
         playerLevelLabel.fontColor = .systemGreen
-        playerLevelLabel.position = CGPoint(x: self.size.width * 0.85, y: hudY1)
+        playerLevelLabel.position = CGPoint(x: col4X, y: hudY1)
         playerLevelLabel.horizontalAlignmentMode = .center
         playerLevelLabel.zPosition = 10
         addChild(playerLevelLabel)
         
-        // XP Progress - positioned below level
+        // Second row - Currency and XP
+        coinsLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        coinsLabel.text = "🪙\(settings.coins)"
+        coinsLabel.fontSize = smallFontSize
+        coinsLabel.fontColor = .systemYellow
+        coinsLabel.position = CGPoint(x: col1X, y: hudY2)
+        coinsLabel.horizontalAlignmentMode = .center
+        coinsLabel.zPosition = 10
+        addChild(coinsLabel)
+        
+        gemsLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        gemsLabel.text = "💎\(settings.gems)"
+        gemsLabel.fontSize = smallFontSize
+        gemsLabel.fontColor = .systemBlue
+        gemsLabel.position = CGPoint(x: col2X, y: hudY2)
+        gemsLabel.horizontalAlignmentMode = .center
+        gemsLabel.zPosition = 10
+        addChild(gemsLabel)
+        
+        // XP Progress
         xpLabel = SKLabelNode(fontNamed: "AvenirNext-Medium")
         let requiredXP = settings.playerLevel * 100
         let currentXP = settings.experiencePoints % 100
         xpLabel.text = "XP: \(currentXP)/\(requiredXP)"
         xpLabel.fontSize = smallFontSize
         xpLabel.fontColor = .systemGray
-        xpLabel.position = CGPoint(x: self.size.width * 0.85, y: hudY2)
+        xpLabel.position = CGPoint(x: col4X, y: hudY2)
         xpLabel.horizontalAlignmentMode = .center
         xpLabel.zPosition = 10
         addChild(xpLabel)
-        
-        // Combo display - center top
-        comboLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
-        comboLabel.text = "⚡ 0x"
-        comboLabel.fontSize = min(20, self.size.width / 18)
-        comboLabel.fontColor = .systemOrange
-        comboLabel.position = CGPoint(x: self.size.width * 0.6, y: hudY1)
-        comboLabel.horizontalAlignmentMode = .center
-        comboLabel.zPosition = 10
-        comboLabel.alpha = 0 // Hidden initially
-        addChild(comboLabel)
     }
     
     private func setupPowerUpUI() {
@@ -375,17 +383,19 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         overlay.position = CGPoint(x: self.size.width/2, y: self.size.height/2)
         pauseMenu.addChild(overlay)
         
-        // Menu container
-        let menuContainer = SKSpriteNode.roundedRect(color: .white, size: CGSize(width: 320, height: 420), cornerRadius: 25)
+        // Menu container - responsive sizing
+        let menuWidth = min(320, self.size.width * 0.8)
+        let menuHeight = min(420, self.size.height * 0.6)
+        let menuContainer = SKSpriteNode.roundedRect(color: .white, size: CGSize(width: menuWidth, height: menuHeight), cornerRadius: 25)
         menuContainer.position = CGPoint(x: self.size.width/2, y: self.size.height/2)
         pauseMenu.addChild(menuContainer)
         
-        // Title
+        // Title - responsive font size
         let titleLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         titleLabel.text = "Game Paused"
-        titleLabel.fontSize = 32
+        titleLabel.fontSize = min(32, self.size.width / 12)
         titleLabel.fontColor = .darkGray
-        titleLabel.position = CGPoint(x: 0, y: 140)
+        titleLabel.position = CGPoint(x: 0, y: menuHeight * 0.35)
         menuContainer.addChild(titleLabel)
         
         // Resume button
@@ -496,11 +506,11 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
     }
     
     private func createCritter(named critterName: String, targetColor: UIColor) {
-        let critterSize = CGSize(width: min(100, self.size.width * 0.25), height: min(100, self.size.width * 0.25))
+        let critterSize = CGSize(width: min(90, self.size.width * 0.22), height: min(90, self.size.width * 0.22))
         
         // Create a container for both versions of the critter
         critterNode = SKNode()
-        critterNode.position = CGPoint(x: self.size.width/2, y: self.size.height * 0.6)
+        critterNode.position = CGPoint(x: self.size.width/2, y: self.size.height * 0.55) // Moved down slightly
         critterNode.zPosition = 5
         critterNode.name = "critter"
         
