@@ -157,6 +157,20 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         .red, .blue, .green, .yellow, .orange, .purple, .systemPink, .brown, .cyan, .magenta
     ]
     
+    // MARK: - Animal-Specific Color Palettes
+    private let animalColors: [String: [UIColor]] = [
+        "frog": [.green, .systemGreen, UIColor(red: 0.2, green: 0.8, blue: 0.2, alpha: 1.0), .yellow, .brown],
+        "cat": [.orange, .systemOrange, .brown, .gray, .black, .systemPink, .white],
+        "dog": [.brown, .systemBrown, .black, .gray, .white, .systemOrange, .yellow],
+        "rabbit": [.white, .gray, .brown, .systemPink, .systemOrange, .black],
+        "elephant": [.gray, .systemGray, .brown, .black, .white],
+        "giraffe": [.yellow, .systemYellow, .orange, .brown, .systemOrange],
+        "lion": [.yellow, .systemYellow, .orange, .brown, .systemOrange],
+        "tiger": [.orange, .systemOrange, .yellow, .brown, .red],
+        "bear": [.brown, .systemBrown, .black, .white, .gray],
+        "penguin": [.black, .white, .gray, .systemBlue, .blue]
+    ]
+    
     // Test function to verify colors
     private func colorName(for color: UIColor) -> String {
         switch color {
@@ -170,6 +184,14 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         case .brown: return "Brown"
         case .cyan: return "Cyan"
         case .magenta: return "Magenta"
+        case .systemGreen: return "Green"
+        case .systemOrange: return "Orange"
+        case .systemBrown: return "Brown"
+        case .systemBlue: return "Blue"
+        case .gray: return "Gray"
+        case .systemGray: return "Gray"
+        case .black: return "Black"
+        case .white: return "White"
         default: return "Unknown"
         }
     }
@@ -539,18 +561,21 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         // Determine number of colors based on level
         let numberOfColors = min(3 + (currentLevel - 1) / 3, 6)
         
-        // Select random critter and color
+        // Select random critter and appropriate color for that animal
         let randomCritter = critters.randomElement() ?? "frog"
         currentAnimalName = randomCritter // Store for collection
-        targetColor = colors.randomElement() ?? .red
+        
+        // Get animal-appropriate colors
+        let animalColorPalette = animalColors[randomCritter] ?? colors
+        targetColor = animalColorPalette.randomElement() ?? .red
         
         print("Starting level \(currentLevel) with \(numberOfColors) colors, critter: \(randomCritter), target color: \(colorName(for: targetColor))")
         
         // Create critter (placeholder - in real app you'd use actual critter images)
         createCritter(named: randomCritter, targetColor: targetColor)
         
-        // Create color blobs
-        createColorBlobs(count: numberOfColors, targetColor: targetColor)
+        // Create color blobs using animal-appropriate colors
+        createColorBlobs(count: numberOfColors, targetColor: targetColor, animalName: randomCritter)
         
         // Save current level
         GameSettings.shared.currentLevel = currentLevel
@@ -661,13 +686,16 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         print("Created critter: \(critterName) with target color: \(colorName(for: targetColor)) at position \(critterNode.position)")
     }
     
-    private func createColorBlobs(count: Int, targetColor: UIColor) {
+    private func createColorBlobs(count: Int, targetColor: UIColor, animalName: String) {
         let blobSize = layoutGuide.scaledSize(CGSize(width: 70, height: 70))
         let spacing: CGFloat = min(layoutGuide.scaledFont(90), (layoutGuide.sceneSize.width - 60) / CGFloat(count))
         let totalWidth = CGFloat(count) * spacing
         let startX = (layoutGuide.sceneSize.width - totalWidth) / 2 + spacing / 2
         
-        print("Creating \(count) color blobs for target color: \(colorName(for: targetColor))")
+        print("Creating \(count) color blobs for target color: \(colorName(for: targetColor)) for animal: \(animalName)")
+        
+        // Get animal-appropriate colors
+        let animalColorPalette = animalColors[animalName] ?? colors
         
         // Create the color array for this level
         var levelColors: [UIColor] = []
@@ -675,21 +703,27 @@ class GameScene: SKScene, AdManagerDelegate, AnimalGalleryDelegate, MiniGameDele
         // Always include the target color
         levelColors.append(targetColor)
         
-        // Add other random colors (excluding target color)
-        let otherColors = colors.filter { $0 != targetColor }
+        // Add other animal-appropriate colors (excluding target color)
+        let otherColors = animalColorPalette.filter { !isSameColor($0, targetColor) }
         let shuffledOtherColors = otherColors.shuffled()
         
         // Add enough other colors to reach the desired count
         for i in 0..<(count - 1) {
             if i < shuffledOtherColors.count {
                 levelColors.append(shuffledOtherColors[i])
+            } else {
+                // If we don't have enough animal-specific colors, fill with general colors
+                let generalColors = colors.filter { !levelColors.contains { isSameColor($0, $1) } }
+                if let generalColor = generalColors.randomElement() {
+                    levelColors.append(generalColor)
+                }
             }
         }
         
         // Shuffle the final array so target color isn't always first
         levelColors.shuffle()
         
-        print("Level colors: \(levelColors.map { colorName(for: $0) })")
+        print("Level colors for \(animalName): \(levelColors.map { colorName(for: $0) })")
         
         for i in 0..<count {
             let currentColor = levelColors[i]
