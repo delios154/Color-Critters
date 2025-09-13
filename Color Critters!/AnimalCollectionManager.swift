@@ -114,25 +114,48 @@ class AnimalCollectionManager {
     // MARK: - Helper Methods
     
     static func colorName(for color: UIColor) -> String {
-        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-        color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        
-        let r = round(red * 100) / 100
-        let g = round(green * 100) / 100
-        let b = round(blue * 100) / 100
-        
-        if r == 1.0 && g == 0.0 && b == 0.0 { return "Red" }
-        if r == 0.0 && g == 0.0 && b == 1.0 { return "Blue" }
-        if r == 0.0 && g == 1.0 && b == 0.0 { return "Green" }
-        if r == 1.0 && g == 1.0 && b == 0.0 { return "Yellow" }
-        if r == 1.0 && g == 0.5 && b == 0.0 { return "Orange" }
-        if r == 0.5 && g == 0.0 && b == 0.5 { return "Purple" }
-        if r == 1.0 && g == 0.18 && b == 0.33 { return "Pink" }
-        if r == 0.6 && g == 0.4 && b == 0.2 { return "Brown" }
-        if r == 0.0 && g == 1.0 && b == 1.0 { return "Cyan" }
-        if r == 1.0 && g == 0.0 && b == 1.0 { return "Magenta" }
-        
-        return "Unknown"
+        // First try to match system colors directly
+        switch color {
+        case .red: return "Red"
+        case .blue: return "Blue"
+        case .green: return "Green"
+        case .yellow: return "Yellow"
+        case .orange: return "Orange"
+        case .purple: return "Purple"
+        case .systemPink: return "Pink"
+        case .brown: return "Brown"
+        case .cyan: return "Cyan"
+        case .magenta: return "Magenta"
+        case .systemGreen: return "Green"
+        case .systemOrange: return "Orange"
+        case .systemBrown: return "Brown"
+        case .systemBlue: return "Blue"
+        case .gray: return "Gray"
+        case .systemGray: return "Gray"
+        case .black: return "Black"
+        case .white: return "White"
+        default:
+            // Fallback to RGB comparison for custom colors
+            var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+            color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            
+            let r = round(red * 100) / 100
+            let g = round(green * 100) / 100
+            let b = round(blue * 100) / 100
+            
+            if r == 1.0 && g == 0.0 && b == 0.0 { return "Red" }
+            if r == 0.0 && g == 0.0 && b == 1.0 { return "Blue" }
+            if r == 0.0 && g == 1.0 && b == 0.0 { return "Green" }
+            if r == 1.0 && g == 1.0 && b == 0.0 { return "Yellow" }
+            if r == 1.0 && g == 0.5 && b == 0.0 { return "Orange" }
+            if r == 0.5 && g == 0.0 && b == 0.5 { return "Purple" }
+            if r == 1.0 && g == 0.18 && b == 0.33 { return "Pink" }
+            if r == 0.6 && g == 0.4 && b == 0.2 { return "Brown" }
+            if r == 0.0 && g == 1.0 && b == 1.0 { return "Cyan" }
+            if r == 1.0 && g == 0.0 && b == 1.0 { return "Magenta" }
+            
+            return "Unknown"
+        }
     }
     
     private func getAllColors() -> [UIColor] {

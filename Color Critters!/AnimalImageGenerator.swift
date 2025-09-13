@@ -17,12 +17,13 @@ class AnimalImageGenerator {
             let rect = CGRect(origin: .zero, size: size)
             let ctx = context.cgContext
             
-            // Set up drawing context
-            ctx.setFillColor(UIColor.white.cgColor)
+            // Set up drawing context with transparent background
+            ctx.setFillColor(UIColor.clear.cgColor)
             ctx.fill(rect)
             
-            // Set animal color (will be tinted later)
-            ctx.setFillColor(UIColor.black.cgColor)
+            // Get animal-appropriate base color
+            let baseColor = getAnimalBaseColor(for: animal)
+            ctx.setFillColor(baseColor.cgColor)
             
             // Draw different animal shapes
             switch animal.lowercased() {
@@ -52,6 +53,34 @@ class AnimalImageGenerator {
                 let radius = min(rect.width, rect.height) * 0.4
                 ctx.fillEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
             }
+        }
+    }
+    
+    // MARK: - Animal Base Colors
+    private static func getAnimalBaseColor(for animal: String) -> UIColor {
+        switch animal.lowercased() {
+        case "frog":
+            return UIColor(red: 0.2, green: 0.7, blue: 0.2, alpha: 1.0) // Green
+        case "cat":
+            return UIColor(red: 0.9, green: 0.5, blue: 0.1, alpha: 1.0) // Orange
+        case "dog":
+            return UIColor(red: 0.6, green: 0.4, blue: 0.2, alpha: 1.0) // Brown
+        case "rabbit":
+            return UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1.0) // Light gray/white
+        case "elephant":
+            return UIColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0) // Gray
+        case "giraffe":
+            return UIColor(red: 0.9, green: 0.7, blue: 0.1, alpha: 1.0) // Yellow
+        case "lion":
+            return UIColor(red: 0.9, green: 0.6, blue: 0.1, alpha: 1.0) // Golden yellow
+        case "tiger":
+            return UIColor(red: 0.9, green: 0.5, blue: 0.1, alpha: 1.0) // Orange
+        case "bear":
+            return UIColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0) // Dark brown
+        case "penguin":
+            return UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0) // Black
+        default:
+            return UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0) // Dark gray
         }
     }
     
@@ -217,15 +246,16 @@ class AnimalImageGenerator {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let size = min(rect.width, rect.height) * 0.8
         
-        // Mane
+        // Mane - will be tinted with the target color
         let maneRect = CGRect(x: center.x - size/2, y: center.y - size/2, width: size, height: size/1.2)
         ctx.fillEllipse(in: maneRect)
         
-        // Head
+        // Head - slightly different color for contrast
         let headRect = CGRect(x: center.x - size/3, y: center.y - size/3, width: size/1.5, height: size/1.5)
-        ctx.setFillColor(UIColor.darkGray.cgColor)
+        let headColor = UIColor(red: 0.8, green: 0.5, blue: 0.1, alpha: 1.0) // Slightly different from mane
+        ctx.setFillColor(headColor.cgColor)
         ctx.fillEllipse(in: headRect)
-        ctx.setFillColor(UIColor.black.cgColor)
+        ctx.setFillColor(getAnimalBaseColor(for: "lion").cgColor)
         
         // Body
         let bodyRect = CGRect(x: center.x - size/4, y: center.y + size/6, width: size/2, height: size/2.5)
@@ -297,33 +327,33 @@ class AnimalImageGenerator {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let size = min(rect.width, rect.height) * 0.8
         
-        // Body (oval, upright)
+        // Body (oval, upright) - black
         let bodyRect = CGRect(x: center.x - size/3, y: center.y - size/3, width: size/1.5, height: size/1.2)
         ctx.fillEllipse(in: bodyRect)
         
-        // White belly
-        ctx.setFillColor(UIColor.lightGray.cgColor)
+        // White belly - this will be visible when tinted
+        ctx.setFillColor(UIColor.white.cgColor)
         let bellyRect = CGRect(x: center.x - size/5, y: center.y - size/4, width: size/2.5, height: size/1.5)
         ctx.fillEllipse(in: bellyRect)
-        ctx.setFillColor(UIColor.black.cgColor)
+        ctx.setFillColor(getAnimalBaseColor(for: "penguin").cgColor)
         
-        // Head
+        // Head - black
         let headRect = CGRect(x: center.x - size/4, y: center.y - size/1.5, width: size/2, height: size/2.5)
         ctx.fillEllipse(in: headRect)
         
-        // Beak
+        // Beak - orange (will be tinted)
         ctx.setFillColor(UIColor.orange.cgColor)
         let beakRect = CGRect(x: center.x - size/12, y: center.y - size/1.8, width: size/6, height: size/12)
         ctx.fillEllipse(in: beakRect)
-        ctx.setFillColor(UIColor.black.cgColor)
+        ctx.setFillColor(getAnimalBaseColor(for: "penguin").cgColor)
         
-        // Flippers
+        // Flippers - black
         let flipperRect1 = CGRect(x: center.x - size/2, y: center.y - size/6, width: size/6, height: size/3)
         let flipperRect2 = CGRect(x: center.x + size/3, y: center.y - size/6, width: size/6, height: size/3)
         ctx.fillEllipse(in: flipperRect1)
         ctx.fillEllipse(in: flipperRect2)
         
-        // Feet
+        // Feet - orange (will be tinted)
         ctx.setFillColor(UIColor.orange.cgColor)
         let feetRect1 = CGRect(x: center.x - size/6, y: center.y + size/2.5, width: size/8, height: size/12)
         let feetRect2 = CGRect(x: center.x + size/12, y: center.y + size/2.5, width: size/8, height: size/12)
